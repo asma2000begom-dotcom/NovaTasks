@@ -2,559 +2,301 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
-<title>Nova Tasks — Earn by Completing Tasks</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Nova Tasks — Admin Panel</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-<!-- Firebase (compat SDK — works directly in a static page, no build step) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 
 <style>
-/* ===================== Design tokens ===================== */
 :root{
-  --bg:#0a0e1a;
-  --bg-2:#0f1524;
-  --card:rgba(255,255,255,0.045);
-  --card-border:rgba(255,255,255,0.09);
-  --text:#eef1f7;
-  --text-dim:#8b93a7;
-  --coral:#ff6b6b;
-  --gold:#ffd166;
-  --teal:#06d6a0;
-  --violet:#7b61ff;
-  --danger:#ff5470;
-  --radius:20px;
-  --shadow: 0 20px 60px rgba(0,0,0,0.35);
-}
-body.light{
-  --bg:#f5f3ee;
-  --bg-2:#ffffff;
-  --card:rgba(10,14,26,0.04);
-  --card-border:rgba(10,14,26,0.08);
-  --text:#141826;
-  --text-dim:#6b7280;
+  --bg:#0a0e1a; --bg-2:#0f1524; --card:rgba(255,255,255,0.045); --card-border:rgba(255,255,255,0.09);
+  --text:#eef1f7; --text-dim:#8b93a7;
+  --coral:#ff6b6b; --gold:#ffd166; --teal:#06d6a0; --violet:#7b61ff; --danger:#ff5470;
 }
 *{box-sizing:border-box; margin:0; padding:0;}
-html,body{height:100%;}
-body{
-  font-family:'Inter',sans-serif;
-  background:var(--bg);
-  color:var(--text);
-  min-height:100vh;
-  overflow-x:hidden;
-  transition:background .4s ease, color .4s ease;
-}
+body{font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); min-height:100vh;}
 h1,h2,h3,.brand{font-family:'Space Grotesk',sans-serif;}
-button{font-family:inherit; cursor:pointer;}
+button{cursor:pointer; font-family:inherit;}
 input,select,textarea{font-family:inherit;}
-a{color:inherit;}
 
-/* Cinematic aurora background */
 .aurora{position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none;}
-.blob{position:absolute; border-radius:50%; filter:blur(90px); opacity:.55; animation:float 18s ease-in-out infinite;}
-.blob.b1{width:420px; height:420px; background:var(--coral); top:-120px; left:-100px; animation-delay:0s;}
-.blob.b2{width:380px; height:380px; background:var(--violet); bottom:-140px; right:-80px; animation-delay:3s;}
-.blob.b3{width:300px; height:300px; background:var(--teal); top:40%; left:60%; animation-delay:6s;}
-.blob.b4{width:260px; height:260px; background:var(--gold); bottom:10%; left:10%; animation-delay:9s;}
-@keyframes float{
-  0%,100%{transform:translate(0,0) scale(1);}
-  33%{transform:translate(30px,-40px) scale(1.08);}
-  66%{transform:translate(-25px,25px) scale(0.95);}
-}
-@media (prefers-reduced-motion: reduce){ .blob{animation:none;} }
+.blob{position:absolute; border-radius:50%; filter:blur(100px); opacity:.4;}
+.blob.b1{width:460px; height:460px; background:var(--violet); top:-160px; left:-120px;}
+.blob.b2{width:380px; height:380px; background:var(--coral); bottom:-160px; right:-100px;}
 
-.wrap{position:relative; z-index:1; max-width:480px; margin:0 auto; min-height:100vh; display:flex; flex-direction:column;}
+.wrap{position:relative; z-index:1; max-width:1100px; margin:0 auto; padding:28px 20px 60px;}
 
-/* ===================== Auth screen ===================== */
-#auth-screen{flex:1; display:flex; flex-direction:column; justify-content:center; padding:32px 24px;}
-.brand{font-size:30px; font-weight:700; letter-spacing:-0.02em;}
-.brand span{color:var(--coral);}
-.tagline{color:var(--text-dim); margin-top:6px; font-size:14px; margin-bottom:32px;}
-
-.card{
-  background:var(--card);
-  border:1px solid var(--card-border);
-  border-radius:var(--radius);
-  padding:24px;
-  backdrop-filter:blur(20px);
-  box-shadow:var(--shadow);
+/* login */
+#login-screen{min-height:90vh; display:flex; align-items:center; justify-content:center;}
+.login-card{
+  width:100%; max-width:380px; background:var(--card); border:1px solid var(--card-border);
+  border-radius:20px; padding:28px; backdrop-filter:blur(20px);
 }
 .field{margin-bottom:14px;}
 .field label{display:block; font-size:12px; color:var(--text-dim); margin-bottom:6px; text-transform:uppercase; letter-spacing:.05em;}
 .field input, .field select, .field textarea{
-  width:100%; padding:13px 14px; border-radius:12px;
-  border:1px solid var(--card-border); background:rgba(255,255,255,0.03);
-  color:var(--text); font-size:14.5px; outline:none;
-  transition:border .2s;
+  width:100%; padding:12px 14px; border-radius:10px; border:1px solid var(--card-border);
+  background:rgba(255,255,255,0.03); color:var(--text); font-size:14px; outline:none;
 }
-body.light .field input, body.light .field select, body.light .field textarea{background:rgba(0,0,0,0.02);}
 .field input:focus, .field select:focus, .field textarea:focus{border-color:var(--coral);}
-.field input::placeholder{color:var(--text-dim);}
-
+.field input:disabled{opacity:.6; cursor:not-allowed;}
 .btn{
-  width:100%; padding:14px; border:none; border-radius:14px; font-weight:600; font-size:15px;
+  padding:12px 18px; border:none; border-radius:12px; font-weight:600; font-size:14px;
   color:#0a0e1a; background:linear-gradient(135deg, var(--gold), var(--coral));
-  box-shadow:0 10px 30px rgba(255,107,107,0.25);
-  transition:transform .15s ease;
 }
-.btn:active{transform:scale(0.97);}
-.btn.secondary{background:transparent; color:var(--text); border:1px solid var(--card-border); box-shadow:none;}
-.btn.danger{background:var(--danger); color:#fff; box-shadow:none;}
-.btn.small{width:auto; padding:9px 16px; font-size:13px;}
-
-.switch-line{text-align:center; margin-top:18px; font-size:13.5px; color:var(--text-dim);}
-.switch-line b{color:var(--coral); cursor:pointer;}
-.err-msg{color:var(--danger); font-size:13px; margin-top:10px; display:none;}
+.btn.secondary{background:transparent; color:var(--text); border:1px solid var(--card-border);}
+.btn.danger{background:var(--danger); color:#fff;}
+.btn.ok{background:var(--teal); color:#06251d;}
+.btn.full{width:100%;}
+.err-msg{color:var(--danger); font-size:13px; margin-top:10px;}
 .hidden{display:none !important;}
 
-/* ===================== App shell ===================== */
-#app-screen{flex:1; display:flex; flex-direction:column; min-height:100vh;}
-.topbar{
-  display:flex; align-items:center; justify-content:space-between;
-  padding:18px 20px 10px; position:sticky; top:0; z-index:5;
-  background:linear-gradient(to bottom, var(--bg) 70%, transparent);
-}
-.topbar .brand{font-size:20px;}
-.topbar-actions{display:flex; gap:8px;}
-.icon-btn{
-  width:38px; height:38px; border-radius:50%; border:1px solid var(--card-border);
-  background:var(--card); color:var(--text); font-size:15px; display:flex; align-items:center; justify-content:center;
-}
-.icon-btn svg{width:18px; height:18px;}
-
-main{flex:1; padding:4px 20px 100px; overflow-y:auto;}
-.page{display:none; animation:fadeIn .35s ease;}
-.page.active{display:block;}
-@keyframes fadeIn{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);}}
-
-.section-title{font-size:22px; font-weight:700; margin:14px 0 4px;}
-.section-sub{color:var(--text-dim); font-size:13.5px; margin-bottom:16px;}
-
-/* tabs */
-.tabbar{display:flex; gap:6px; margin-bottom:18px;}
+/* header + tabs */
+.topbar{display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;}
+.brand{font-size:22px; font-weight:700;}
+.brand span{color:var(--coral);}
+.tabbar{display:flex; gap:8px; margin-bottom:22px; flex-wrap:wrap;}
 .tabbar button{
-  flex:1; padding:10px 0; border-radius:12px; border:1px solid var(--card-border);
-  background:var(--card); color:var(--text-dim); font-size:12px; font-weight:600;
+  padding:10px 18px; border-radius:12px; border:1px solid var(--card-border);
+  background:var(--card); color:var(--text-dim); font-size:13.5px; font-weight:600;
 }
 .tabbar button.active{background:linear-gradient(135deg, var(--gold), var(--coral)); color:#0a0e1a; border:none;}
 
-/* task card */
-.task-card{
-  background:var(--card); border:1px solid var(--card-border); border-radius:18px;
-  padding:18px; margin-bottom:14px; position:relative; overflow:hidden;
-}
-.task-card::before{
-  content:""; position:absolute; top:0; left:0; width:4px; height:100%;
-  background:linear-gradient(180deg, var(--coral), var(--violet));
-}
-.task-top{display:flex; justify-content:space-between; align-items:flex-start; gap:10px;}
-.task-title{font-weight:600; font-size:15.5px;}
-.task-reward{color:var(--teal); font-weight:700; font-size:15px; white-space:nowrap;}
-.task-desc{color:var(--text-dim); font-size:13px; margin:8px 0 12px; line-height:1.5;}
-.task-status{
-  display:inline-flex; align-items:center; gap:5px; font-size:11px; padding:4px 10px 4px 8px; border-radius:20px; font-weight:600;
-  text-transform:uppercase; letter-spacing:.04em; margin-bottom:10px;
-}
-.task-status svg{width:12px; height:12px;}
-.status-pending{background:rgba(255,209,102,0.15); color:var(--gold);}
-.status-rejected{background:rgba(255,84,112,0.15); color:var(--danger);}
-.status-approved{background:rgba(6,214,160,0.15); color:var(--teal);}
-.empty-state{text-align:center; padding:60px 20px; color:var(--text-dim);}
-.empty-state .icon{margin-bottom:14px; display:flex; justify-content:center;}
-.empty-state .icon svg{width:44px; height:44px; opacity:.5;}
+.tabpage{display:none;}
+.tabpage.active{display:block;}
 
-/* refer page */
-.stat-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:18px 0;}
-.stat-box{background:var(--card); border:1px solid var(--card-border); border-radius:16px; padding:16px;}
-.stat-box .num{font-size:22px; font-weight:700; font-family:'Space Grotesk',sans-serif;}
-.stat-box .lbl{font-size:12px; color:var(--text-dim); margin-top:2px;}
-.refer-code-box{
-  display:flex; align-items:center; justify-content:space-between; gap:10px;
-  background:linear-gradient(135deg, rgba(123,97,255,0.15), rgba(255,107,107,0.15));
-  border:1px dashed var(--violet); border-radius:16px; padding:16px 18px; margin:16px 0;
-}
-.refer-code-box .code{font-size:20px; font-weight:700; letter-spacing:.08em; font-family:'Space Grotesk',sans-serif;}
-.rule-list{list-style:none; margin-top:16px;}
-.rule-list li{display:flex; gap:12px; align-items:flex-start; padding:12px 0; border-bottom:1px solid var(--card-border); font-size:13.5px; color:var(--text-dim);}
-.rule-list li .r-ic{
-  flex:none; width:34px; height:34px; border-radius:11px; display:flex; align-items:center; justify-content:center;
-  background:rgba(123,97,255,0.15); color:var(--violet); margin-top:1px;
-}
-.rule-list li .r-ic svg{width:17px; height:17px;}
-.rule-list li b{color:var(--text);}
+.card{background:var(--card); border:1px solid var(--card-border); border-radius:16px; padding:20px; margin-bottom:16px;}
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+@media(max-width:600px){.grid2{grid-template-columns:1fr;}}
 
-/* wallet */
-.balance-card{
-  background:linear-gradient(135deg, #7b61ff, #ff6b6b);
-  border-radius:22px; padding:24px; color:#fff; margin-bottom:18px; box-shadow:var(--shadow);
-}
-.balance-card .lbl{font-size:12px; opacity:.85; text-transform:uppercase; letter-spacing:.06em;}
-.balance-card .amt{font-size:34px; font-weight:700; margin-top:4px; font-family:'Space Grotesk',sans-serif;}
-.balance-card .amt-usd{font-size:13px; opacity:.85; margin-top:2px;}
-/* payment method picker */
-.method-picker{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:16px;}
-.method-card{
-  position:relative; border-radius:16px; padding:22px 8px; text-align:center; cursor:pointer;
-  border:2.5px solid transparent; color:#fff; transition:transform .15s, box-shadow .15s;
-}
-.method-card:active{transform:scale(0.96);}
-.method-card .m-name{font-size:14px; font-weight:700; letter-spacing:.02em;}
-.method-card[data-method="bkash"]{background:linear-gradient(135deg,#e2136e,#a30f52);}
-.method-card[data-method="nagad"]{background:linear-gradient(135deg,#f6511d,#d81920);}
-.method-card[data-method="usdt"]{background:linear-gradient(135deg,#26a17b,#0c6b4f);}
-.method-card.selected{border-color:#fff; box-shadow:0 10px 26px rgba(0,0,0,0.35); transform:translateY(-3px);}
-
-.history-item{
-  display:flex; justify-content:space-between; align-items:center;
-  padding:14px 0; border-bottom:1px solid var(--card-border); font-size:13.5px;
-}
-.history-item .m{font-weight:600;}
-.history-item .d{color:var(--text-dim); font-size:12px;}
-.history-item .h-left{display:flex; align-items:center; gap:12px;}
-.history-item .h-icon{
-  flex:none; width:36px; height:36px; border-radius:11px; display:flex; align-items:center; justify-content:center; color:#fff;
-}
-.history-item .h-icon svg{width:17px; height:17px;}
-.history-item .h-icon.hi-bkash{background:linear-gradient(135deg,#e2136e,#c0125e);}
-.history-item .h-icon.hi-nagad{background:linear-gradient(135deg,#f6511d,#ec1d24);}
-.history-item .h-icon.hi-usdt{background:linear-gradient(135deg,#26a17b,#0f8a63);}
-
-/* support section */
-.support-list{margin-top:10px;}
-.support-item{
-  display:flex; align-items:center; gap:14px; padding:14px 4px; border-bottom:1px solid var(--card-border);
-  text-decoration:none; color:var(--text);
-}
-.support-item:last-child{border-bottom:none;}
-.support-item .s-icon{
-  flex:none; width:42px; height:42px; border-radius:13px; display:flex; align-items:center; justify-content:center; color:#fff;
-}
-.support-item .s-icon svg{width:21px; height:21px;}
-.support-item.sp-whatsapp .s-icon{background:linear-gradient(135deg,#25d366,#128c7e);}
-.support-item.sp-telegram .s-icon{background:linear-gradient(135deg,#2aabee,#229ed9);}
-.support-item.sp-group .s-icon{background:linear-gradient(135deg,#7b61ff,#5b3fd6);}
-.support-item .s-body{flex:1;}
-.support-item .s-title{font-weight:600; font-size:14px;}
-.support-item .s-sub{font-size:12px; color:var(--text-dim); margin-top:1px;}
-.support-item .s-chev{flex:none; color:var(--text-dim);}
-.support-item .s-chev svg{width:16px; height:16px;}
-
-/* profile */
-.profile-header{display:flex; align-items:center; gap:14px; margin:14px 0 20px;}
-.avatar{
-  width:60px; height:60px; border-radius:50%; display:flex; align-items:center; justify-content:center;
-  background:linear-gradient(135deg, var(--gold), var(--coral)); font-weight:700; font-size:22px; color:#0a0e1a;
-  font-family:'Space Grotesk',sans-serif;
-}
-.uid-row{
-  display:flex; align-items:center; justify-content:space-between; gap:10px;
-  background:var(--card); border:1px solid var(--card-border); border-radius:12px; padding:10px 14px; font-size:12.5px;
-  color:var(--text-dim); margin-bottom:18px;
-}
-.settings-row{
-  display:flex; justify-content:space-between; align-items:center;
-  padding:14px 0; border-bottom:1px solid var(--card-border); font-size:14px;
-}
-
-/* bottom nav */
-.bottomnav{
-  position:fixed; bottom:0; left:0; right:0; z-index:10;
-  max-width:480px; margin:0 auto;
-  background:var(--bg-2); border-top:1px solid var(--card-border);
-  display:flex; padding:8px 6px calc(8px + env(safe-area-inset-bottom));
-}
-.bottomnav button{
-  flex:1; background:none; border:none; color:var(--text-dim);
-  display:flex; flex-direction:column; align-items:center; gap:4px; padding:8px 0; font-size:10.5px; font-weight:600;
-}
-.bottomnav button .ic{font-size:19px;}
-.bottomnav button .ic svg{width:22px; height:22px; display:block;}
-.bottomnav button.active .ic svg{filter:drop-shadow(0 2px 8px rgba(255,107,107,0.5));}
-.bottomnav button.active{color:var(--coral);}
-
-.toast{
-  position:fixed; bottom:90px; left:50%; transform:translateX(-50%);
-  background:var(--text); color:var(--bg); padding:12px 20px; border-radius:12px;
-  font-size:13.5px; z-index:100; opacity:0; transition:opacity .3s, bottom .3s; pointer-events:none;
-  max-width:90%; text-align:center;
-}
-.toast.show{opacity:1; bottom:100px;}
-
-/* suspend + notice overlays */
-.overlay-screen{
-  position:fixed; inset:0; z-index:300; background:var(--bg);
-  display:flex; flex-direction:column; align-items:center; justify-content:center;
-  padding:32px; text-align:center;
-}
-.overlay-screen .ov-icon{font-size:0; margin-bottom:18px;}
-.overlay-screen .ov-icon svg{width:56px; height:56px; color:var(--danger);}
-.overlay-screen h2{margin-bottom:10px;}
-.overlay-screen p{color:var(--text-dim); font-size:14px; max-width:320px; line-height:1.6; margin-bottom:22px;}
-
-.notice-backdrop{
-  position:fixed; inset:0; z-index:250; background:rgba(0,0,0,0.6);
-  display:flex; align-items:center; justify-content:center; padding:24px;
-}
-.notice-modal{
-  background:var(--bg-2); border:1px solid var(--card-border); border-radius:20px;
-  padding:24px; max-width:380px; width:100%; box-shadow:var(--shadow);
-}
-.notice-modal h3{margin-bottom:12px; font-size:17px;}
-.notice-modal p{color:var(--text-dim); font-size:14px; line-height:1.6; margin-bottom:18px; white-space:pre-wrap;}
+table{width:100%; border-collapse:collapse; font-size:13.5px;}
+th{text-align:left; padding:10px 8px; color:var(--text-dim); font-weight:600; font-size:11.5px; text-transform:uppercase; border-bottom:1px solid var(--card-border);}
+td{padding:12px 8px; border-bottom:1px solid var(--card-border); vertical-align:top;}
+.badge{padding:4px 10px; border-radius:20px; font-size:11px; font-weight:600; text-transform:uppercase;}
+.b-pending{background:rgba(255,209,102,0.15); color:var(--gold);}
+.b-approved{background:rgba(6,214,160,0.15); color:var(--teal);}
+.b-rejected{background:rgba(255,84,112,0.15); color:var(--danger);}
+.b-active{background:rgba(6,214,160,0.15); color:var(--teal);}
+.b-inactive{background:rgba(139,147,167,0.15); color:var(--text-dim);}
+.proof-link{color:var(--gold); word-break:break-all;}
+.actions{display:flex; gap:6px; flex-wrap:wrap;}
+.actions button{padding:7px 12px; font-size:12px; border-radius:8px; border:none;}
+.stat-strip{display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px;}
+@media(max-width:700px){.stat-strip{grid-template-columns:repeat(2,1fr);}}
+.stat-mini .num{font-size:22px; font-weight:700; font-family:'Space Grotesk',sans-serif;}
+.stat-mini .lbl{font-size:11.5px; color:var(--text-dim); margin-top:2px;}
+.empty{text-align:center; padding:40px; color:var(--text-dim);}
 </style>
 </head>
 <body>
 
-<div class="aurora">
-  <div class="blob b1"></div>
-  <div class="blob b2"></div>
-  <div class="blob b3"></div>
-  <div class="blob b4"></div>
-</div>
+<div class="aurora"><div class="blob b1"></div><div class="blob b2"></div></div>
 
 <div class="wrap">
 
-  <!-- ===================== AUTH SCREEN ===================== -->
-  <div id="auth-screen">
-    <div class="brand">Nova<span>Tasks</span></div>
-    <p class="tagline">Complete simple tasks. Get paid. Refer friends and earn more.</p>
-
-    <div class="card" id="login-card">
-      <h2 style="margin-bottom:18px;">Welcome back</h2>
-      <div class="field"><label>Email</label><input type="email" id="login-email" placeholder="you@example.com"></div>
-      <div class="field"><label>Password</label><input type="password" id="login-password" placeholder="••••••••"></div>
-      <button class="btn" onclick="doLogin()">Log in</button>
-      <p class="err-msg" id="login-err"></p>
-      <p class="switch-line">New here? <b onclick="showAuth('register')">Create an account</b></p>
-    </div>
-
-    <div class="card hidden" id="register-card">
-      <h2 style="margin-bottom:18px;">Create your account</h2>
-      <div class="field"><label>Full name</label><input type="text" id="reg-name" placeholder="Your name"></div>
-      <div class="field"><label>Email</label><input type="email" id="reg-email" placeholder="you@example.com"></div>
-      <div class="field"><label>Password</label><input type="password" id="reg-password" placeholder="At least 6 characters"></div>
-      <div class="field"><label>Referral code (optional)</label><input type="text" id="reg-refer" placeholder="e.g. AB12CD"></div>
-      <button class="btn" onclick="doRegister()">Sign up</button>
-      <p class="err-msg" id="register-err"></p>
-      <p class="switch-line">Already have an account? <b onclick="showAuth('login')">Log in</b></p>
+  <!-- LOGIN -->
+  <div id="login-screen">
+    <div class="login-card">
+      <h2 style="margin-bottom:6px;">Nova<span style="color:var(--coral)">Tasks</span> Admin</h2>
+      <p style="color:var(--text-dim); font-size:13px; margin-bottom:18px;">Sign in with your admin account.</p>
+      <div class="field"><label>Email</label><input type="email" id="admin-email" value="admin@gmail.com"></div>
+      <div class="field"><label>Password</label><input type="password" id="admin-password" value="@admin123"></div>
+      <button class="btn full" onclick="adminLogin()">Sign in</button>
+      <p class="err-msg" id="admin-login-err"></p>
+      <p style="color:var(--text-dim); font-size:11.5px; margin-top:14px; text-align:center;">First time signing in creates this admin account automatically.</p>
     </div>
   </div>
 
-  <!-- ===================== APP SCREEN ===================== -->
-  <div id="app-screen" class="hidden">
+  <!-- ADMIN APP -->
+  <div id="admin-app" class="hidden">
     <div class="topbar">
-      <div class="brand">Nova<span style="color:var(--coral)">Tasks</span></div>
-      <div class="topbar-actions">
-        <button class="icon-btn" onclick="toggleLang()" title="Language">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="9"></circle><path d="M3 12h18"></path>
-            <path d="M12 3c2.4 2.6 3.6 5.7 3.6 9s-1.2 6.4-3.6 9c-2.4-2.6-3.6-5.7-3.6-9S9.6 5.6 12 3z"></path>
-          </svg>
-        </button>
-        <button class="icon-btn" onclick="toggleTheme()" title="Theme">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20.5 14.2A8.5 8.5 0 1 1 9.8 3.5a7 7 0 0 0 10.7 10.7z"></path>
-          </svg>
-        </button>
+      <div class="brand">Nova<span>Tasks</span> · Admin</div>
+      <button class="btn secondary" onclick="auth.signOut()">Sign out</button>
+    </div>
+
+    <div class="stat-strip">
+      <div class="card stat-mini"><div class="num" id="s-users">0</div><div class="lbl">Total users</div></div>
+      <div class="card stat-mini"><div class="num" id="s-pending">0</div><div class="lbl">Pending submissions</div></div>
+      <div class="card stat-mini"><div class="num" id="s-withdraw">0</div><div class="lbl">Pending withdrawals</div></div>
+      <div class="card stat-mini"><div class="num" id="s-paidout">৳0</div><div class="lbl">Total paid out</div></div>
+    </div>
+
+    <div class="tabbar">
+      <button class="active" data-tab="tasks" onclick="switchTab('tasks')">Tasks</button>
+      <button data-tab="submissions" onclick="switchTab('submissions')">Submissions</button>
+      <button data-tab="withdrawals" onclick="switchTab('withdrawals')">Withdrawals</button>
+      <button data-tab="users" onclick="switchTab('users')">Users</button>
+      <button data-tab="notices" onclick="switchTab('notices')">Notices</button>
+      <button data-tab="settings" onclick="switchTab('settings')">Settings</button>
+    </div>
+
+    <!-- TASKS -->
+    <div class="tabpage active" id="tab-tasks">
+      <div class="card">
+        <h3 style="margin-bottom:14px;">Create a new task</h3>
+        <div class="grid2">
+          <div class="field"><label>Title</label><input type="text" id="nt-title" placeholder="e.g. Follow our Facebook page"></div>
+          <div class="field"><label>Reward (৳)</label><input type="number" id="nt-reward" placeholder="10"></div>
+        </div>
+        <div class="field"><label>Description</label><textarea id="nt-desc" rows="2" placeholder="Explain what the user needs to do"></textarea></div>
+        <div class="field"><label>Task link (the URL users click to go do the task — e.g. your Telegram group, Twitter profile, YouTube channel)</label><input type="text" id="nt-link" placeholder="https://..."></div>
+        <div class="grid2">
+          <div class="field">
+            <label>Platform</label>
+            <select id="nt-platform">
+              <option value="telegram">Telegram — Join group</option>
+              <option value="twitter">Twitter (X) — Follow</option>
+              <option value="instagram">Instagram — Follow</option>
+              <option value="facebook">Facebook — Follow page</option>
+              <option value="youtube">YouTube — Subscribe</option>
+              <option value="tiktok">TikTok — Follow</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Proof required from user</label>
+            <select id="nt-prooftype">
+              <option value="image">Image (screenshot URL)</option>
+              <option value="username">Username</option>
+              <option value="none">No proof — auto-submit on completion</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label>Task images (one URL per line — shown as a gallery to users)</label>
+          <textarea id="nt-images" rows="2" placeholder="https://example.com/image1.jpg
+https://example.com/image2.jpg"></textarea>
+        </div>
+        <button class="btn" onclick="createTask()">Publish task</button>
+      </div>
+
+      <div id="tasks-list"></div>
+    </div>
+
+    <!-- SUBMISSIONS -->
+    <div class="tabpage" id="tab-submissions">
+      <div class="card" style="padding:14px 20px;">
+        <table><thead><tr><th>User</th><th>Task</th><th>Proof</th><th>Reward</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody id="submissions-body"></tbody></table>
+        <div class="empty hidden" id="submissions-empty">No submissions yet.</div>
       </div>
     </div>
 
-    <main>
-      <!-- ---------- HOME ---------- -->
-      <section class="page active" id="page-home">
-        <div class="section-title" data-i18n="homeTitle">Available tasks</div>
-        <p class="section-sub" data-i18n="homeSub">Pick a task, finish it, and submit your proof to earn.</p>
-        <div class="tabbar">
-          <button class="active" data-tab="all" onclick="switchTaskTab('all')">All Tasks</button>
-          <button data-tab="pending" onclick="switchTaskTab('pending')">Pending</button>
-          <button data-tab="approved" onclick="switchTaskTab('approved')">Success</button>
-          <button data-tab="rejected" onclick="switchTaskTab('rejected')">Rejected</button>
+    <!-- WITHDRAWALS -->
+    <div class="tabpage" id="tab-withdrawals">
+      <div class="card" style="padding:14px 20px;">
+        <table><thead><tr><th>User</th><th>Method</th><th>Account</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody id="withdrawals-body"></tbody></table>
+        <div class="empty hidden" id="withdrawals-empty">No withdrawal requests yet.</div>
+      </div>
+    </div>
+
+    <!-- USERS -->
+    <div class="tabpage" id="tab-users">
+      <div class="card" id="user-editor-card" style="display:none;">
+        <h3 style="margin-bottom:14px;">Manage user</h3>
+        <input type="hidden" id="ue-uid">
+        <div class="grid2">
+          <div class="field"><label>Name</label><input type="text" id="ue-name"></div>
+          <div class="field"><label>Balance (৳)</label><input type="number" id="ue-balance"></div>
         </div>
-        <div id="task-list"></div>
-      </section>
-
-      <!-- ---------- REFER ---------- -->
-      <section class="page" id="page-refer">
-        <div class="section-title">Refer & earn</div>
-        <p class="section-sub">Share your code. Earn 20% commission on every task your referrals complete.</p>
-
-        <div class="refer-code-box">
-          <div>
-            <div style="font-size:11px; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">Your code</div>
-            <div class="code" id="refer-code-display">------</div>
+        <div class="field"><label>Contact email (for display only — does not change their login email)</label><input type="email" id="ue-email"></div>
+        <div class="grid2">
+          <div class="field"><label>Suspend account</label>
+            <select id="ue-blocked"><option value="no">Active</option><option value="yes">Blocked / suspended</option></select>
           </div>
-          <button class="btn small" onclick="copyReferCode()">Copy</button>
+          <div class="field"><label>Suspend until (optional)</label><input type="datetime-local" id="ue-blocked-until"></div>
         </div>
-
-        <div class="stat-grid" style="grid-template-columns:repeat(3,1fr);">
-          <div class="stat-box"><div class="num" id="stat-total-referred">0</div><div class="lbl">Total referred</div></div>
-          <div class="stat-box"><div class="num" id="stat-referrals">0</div><div class="lbl">Valid referrals</div></div>
-          <div class="stat-box"><div class="num" id="stat-refer-earn">$0</div><div class="lbl">Referral earnings</div></div>
+        <div class="actions" style="margin-bottom:12px;">
+          <button class="btn ok" onclick="saveUserEdits()">Save changes</button>
+          <button class="btn secondary" onclick="sendPasswordReset()">Send password reset email</button>
+          <button class="btn secondary" onclick="closeUserEditor()">Close</button>
         </div>
-
-        <ul class="rule-list">
-          <li>
-            <span class="r-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 15 15 9"></path><path d="M13.5 6.5 15 5a3.5 3.5 0 1 1 5 5l-1.5 1.5"></path><path d="M10.5 17.5 9 19a3.5 3.5 0 1 1-5-5l1.5-1.5"></path></svg></span>
-            <span>Share your code — new users must enter it <b>at sign up</b>. It can't be added later.</span>
-          </li>
-          <li>
-            <span class="r-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12v8a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-8"></path><path d="M2 7h20v5H2z"></path><path d="M12 22V7"></path><path d="M12 7H7.5a2.5 2.5 0 1 1 0-5C10 2 12 7 12 7Z"></path><path d="M12 7h4.5a2.5 2.5 0 1 0 0-5C14 2 12 7 12 7Z"></path></svg></span>
-            <span>Once they complete their <b>first 3 tasks</b>, the referral becomes valid — they get a one-time <b>৳10 bonus</b>, and you get credited as their referrer.</span>
-          </li>
-          <li>
-            <span class="r-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"></path></svg></span>
-            <span>From then on, you earn <b>20%</b> commission every time they complete another task. The first 3 tasks don't earn a commission.</span>
-          </li>
-        </ul>
-      </section>
-
-      <!-- ---------- WALLET ---------- -->
-      <section class="page" id="page-wallet">
-        <div class="section-title">Wallet</div>
-        <div class="balance-card">
-          <div class="lbl">Available balance</div>
-          <div class="amt" id="wallet-balance-usd">$0.00</div>
-          <div class="amt-usd" id="wallet-balance-converted">≈ ৳0.00</div>
-          <select id="wallet-currency-select" onchange="updateWalletCurrencyDisplay()" style="margin-top:10px; width:auto; padding:6px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.3); background:rgba(255,255,255,0.12); color:#fff; font-size:12px;">
-          </select>
+        <div class="field"><label>Send a personal notice to this user</label><textarea id="ue-notice" rows="2" placeholder="Shown as a pop-up next time they open the app"></textarea></div>
+        <div class="grid2">
+          <div class="field"><label>Image URL (optional)</label><input type="text" id="ue-notice-image" placeholder="https://..."></div>
+          <div class="field"><label>Button label (optional)</label><input type="text" id="ue-notice-btn-label" placeholder="e.g. Open link"></div>
         </div>
+        <div class="field"><label>Button URL (required if you set a button label)</label><input type="text" id="ue-notice-btn-url" placeholder="https://..."></div>
+        <button class="btn" onclick="sendPersonalNotice()">Send notice</button>
+        <p class="err-msg" id="ue-msg" style="display:none;"></p>
+      </div>
 
-        <div class="card" style="margin-bottom:20px;">
-          <h3 style="margin-bottom:14px; font-size:16px;">Withdraw funds</h3>
+      <div class="card" style="padding:14px 20px;">
+        <div class="field" style="max-width:340px;"><input type="text" id="user-search" placeholder="Search by name, email, or account ID..." oninput="renderUsers()"></div>
+        <table><thead><tr><th>Name</th><th>Email</th><th>Account ID</th><th>Balance</th><th>Status</th><th>Referrals</th><th>Action</th></tr></thead>
+        <tbody id="users-body"></tbody></table>
+      </div>
+    </div>
 
-          <label style="display:block; font-size:12px; color:var(--text-dim); margin-bottom:8px; text-transform:uppercase; letter-spacing:.05em;">Choose method</label>
-          <div class="method-picker">
-            <div class="method-card selected" data-method="usdt" onclick="selectMethod('usdt')">
-              <div class="m-name">USDT</div>
-            </div>
-            <div class="method-card" data-method="bkash" onclick="selectMethod('bkash')">
-              <div class="m-name">bKash</div>
-            </div>
-            <div class="method-card" data-method="nagad" onclick="selectMethod('nagad')">
-              <div class="m-name">Nagad</div>
-            </div>
-          </div>
-
-          <div class="field">
-            <label id="wd-acc-label">USDT wallet address (TRC20)</label>
-            <input type="text" id="wd-account" placeholder="T...">
-          </div>
-          <div class="field">
-            <label id="wd-amt-label">Amount</label>
-            <input type="number" id="wd-amount" placeholder="0.00">
-          </div>
-          <button class="btn" onclick="requestWithdraw()">Request withdrawal</button>
-          <p class="err-msg" id="wd-err"></p>
+    <!-- NOTICES -->
+    <div class="tabpage" id="tab-notices">
+      <div class="card" style="max-width:460px;">
+        <h3 style="margin-bottom:6px;">Broadcast to all users</h3>
+        <p style="color:var(--text-dim); font-size:12.5px; margin-bottom:12px;">Shown as a pop-up the next time each user opens the app.</p>
+        <div class="field"><textarea id="broadcast-msg" rows="3" placeholder="e.g. Withdrawals will be processed slower this weekend."></textarea></div>
+        <div class="grid2">
+          <div class="field"><label>Image URL (optional)</label><input type="text" id="broadcast-image" placeholder="https://..."></div>
+          <div class="field"><label>Button label (optional)</label><input type="text" id="broadcast-btn-label" placeholder="e.g. Join our group"></div>
         </div>
+        <div class="field"><label>Button URL (required if you set a button label)</label><input type="text" id="broadcast-btn-url" placeholder="https://..."></div>
+        <button class="btn" onclick="sendBroadcast()">Send to all users</button>
+        <p class="err-msg" id="broadcast-status" style="display:none;"></p>
+      </div>
+      <div class="card" style="max-width:460px;">
+        <h3 style="margin-bottom:6px;">Message a specific user</h3>
+        <p style="color:var(--text-dim); font-size:12.5px; margin-bottom:12px;">Look them up by email or account ID from the Users tab and click "Manage" — the notice box is right there.</p>
+      </div>
+    </div>
 
-        <h3 style="margin-bottom:10px; font-size:16px;">History</h3>
-        <div id="withdraw-history"></div>
-      </section>
+    <!-- SETTINGS -->
+    <div class="tabpage" id="tab-settings">
+      <div class="card" style="max-width:420px;">
+        <h3 style="margin-bottom:14px;">Withdrawal limits</h3>
+        <div class="field"><label>Minimum withdrawal (৳)</label><input type="number" id="set-min" placeholder="120"></div>
+        <div class="field"><label>Maximum withdrawal (৳)</label><input type="number" id="set-max" placeholder="5000"></div>
+        <button class="btn" onclick="saveSettings()">Save settings</button>
+        <p class="err-msg" id="settings-msg" style="color:var(--teal); display:none;"></p>
+      </div>
 
-      <!-- ---------- PROFILE ---------- -->
-      <section class="page" id="page-profile">
-        <div class="profile-header">
-          <div class="avatar" id="profile-initial">N</div>
-          <div>
-            <div style="font-weight:700; font-size:17px;" id="profile-name">—</div>
-            <div style="color:var(--text-dim); font-size:13px;" id="profile-email">—</div>
-          </div>
+      <div class="card" style="max-width:420px;">
+        <h3 style="margin-bottom:14px;">Admin account</h3>
+        <div class="field"><label>Current signed-in email</label><input type="text" id="cur-admin-email" disabled></div>
+        <div class="field"><label>New email (optional)</label><input type="email" id="new-admin-email" placeholder="Leave blank to keep current"></div>
+        <div class="field"><label>New password (optional)</label><input type="password" id="new-admin-password" placeholder="Leave blank to keep current"></div>
+        <button class="btn" onclick="updateAdminCredentials()">Update credentials</button>
+        <p class="err-msg" id="admin-cred-msg" style="display:none;"></p>
+      </div>
+
+      <div class="card" style="max-width:420px;">
+        <h3 style="margin-bottom:6px;">Support links</h3>
+        <p style="color:var(--text-dim); font-size:12.5px; margin-bottom:12px;">Shown on the user app's Profile page.</p>
+        <div class="field"><label>WhatsApp link (wa.me URL)</label><input type="text" id="sup-whatsapp" placeholder="https://wa.me/8801XXXXXXXXX"></div>
+        <div class="field"><label>Telegram support link</label><input type="text" id="sup-telegram" placeholder="https://t.me/yourusername"></div>
+        <div class="field"><label>Telegram group link</label><input type="text" id="sup-group" placeholder="https://t.me/+..."></div>
+        <button class="btn" onclick="saveSupportLinks()">Save support links</button>
+        <p class="err-msg" id="sup-msg" style="display:none;"></p>
+      </div>
+
+      <div class="card" style="max-width:460px;">
+        <h3 style="margin-bottom:6px;">Wallet display currencies</h3>
+        <p style="color:var(--text-dim); font-size:12.5px; margin-bottom:12px;">Users pick one of these to see their balance converted, on top of USD. Actual withdrawals still go out via USDT / bKash / Nagad — this is for display only.</p>
+        <div id="currency-list" style="margin-bottom:14px;"></div>
+        <div class="grid2">
+          <div class="field"><label>Code</label><input type="text" id="cur-code" placeholder="e.g. INR" style="text-transform:uppercase;"></div>
+          <div class="field"><label>Symbol</label><input type="text" id="cur-symbol" placeholder="₹"></div>
         </div>
-
-        <div class="refer-code-box" style="margin:14px 0 18px;">
-          <div>
-            <div style="font-size:11px; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">Your account ID</div>
-            <div class="code" id="profile-refercode">------</div>
-          </div>
-          <button class="btn small" onclick="copyAccountId()">Copy</button>
+        <div class="grid2">
+          <div class="field"><label>Name</label><input type="text" id="cur-name" placeholder="Indian Rupee"></div>
+          <div class="field"><label>Rate (units per 1 USD)</label><input type="number" id="cur-rate" placeholder="83.5"></div>
         </div>
-        <p style="color:var(--text-dim); font-size:12px; margin:-10px 0 16px;">Share this ID with support if you ever need help with your account.</p>
-
-        <div class="stat-grid">
-          <div class="stat-box"><div class="num" id="p-referrals">0</div><div class="lbl">Referrals</div></div>
-          <div class="stat-box"><div class="num" id="p-earned">৳0</div><div class="lbl">Total earned</div></div>
-          <div class="stat-box"><div class="num" id="p-withdrawn">৳0</div><div class="lbl">Total withdrawn</div></div>
-          <div class="stat-box"><div class="num" id="p-tasks">0</div><div class="lbl">Tasks completed</div></div>
-        </div>
-
-        <div class="card" style="margin-top:18px;">
-          <h3 style="margin-bottom:10px; font-size:15px;">Change password</h3>
-          <div class="field"><input type="password" id="new-password" placeholder="New password"></div>
-          <button class="btn secondary" onclick="changePassword()">Update password</button>
-          <p class="err-msg" id="pw-err"></p>
-        </div>
-
-        <div class="card" style="margin-top:16px;">
-          <div class="settings-row"><span>Dark theme</span><input type="checkbox" id="theme-checkbox" onchange="toggleTheme()"></div>
-        </div>
-
-        <div class="card" style="margin-top:16px;">
-          <h3 style="margin-bottom:6px; font-size:15px;">Support</h3>
-          <p style="color:var(--text-dim); font-size:12.5px; margin-bottom:4px;">Need help? Reach out anytime.</p>
-          <div class="support-list">
-            <a class="support-item sp-whatsapp" id="support-whatsapp" href="#" target="_blank" rel="noopener">
-              <span class="s-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.71.45 3.38 1.3 4.85L2 22l5.35-1.4a9.9 9.9 0 0 0 4.69 1.19h.01c5.46 0 9.9-4.45 9.9-9.9 0-2.65-1.03-5.13-2.9-7C17.17 3.03 14.7 2 12.04 2Zm5.8 14.16c-.24.68-1.4 1.31-1.93 1.35-.5.05-1.02.24-3.42-.72-2.9-1.16-4.76-4.12-4.9-4.31-.14-.19-1.17-1.56-1.17-2.98 0-1.42.74-2.11 1-2.4.26-.29.57-.36.76-.36.19 0 .38 0 .55.01.18.01.42-.07.65.5.24.58.82 2 .89 2.15.07.14.12.31.02.5-.1.19-.15.31-.29.48-.15.17-.31.38-.44.51-.15.14-.3.3-.13.58.17.29.76 1.25 1.63 2.02 1.12 1 2.06 1.31 2.35 1.46.29.14.46.12.63-.07.17-.19.72-.84.92-1.13.19-.29.38-.24.64-.14.26.1 1.65.78 1.93.92.29.14.48.22.55.34.07.12.07.68-.17 1.36Z"></path></svg></span>
-              <span class="s-body"><div class="s-title">WhatsApp Support</div></span>
-              <span class="s-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"></path></svg></span>
-            </a>
-            <a class="support-item sp-telegram" id="support-telegram" href="#" target="_blank" rel="noopener">
-              <span class="s-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.9 4.3 2.9 11.6c-1.3.5-1.3 1.2-.2 1.5l4.9 1.5 1.9 5.8c.2.6.4.8.9.8.4 0 .6-.2.9-.5l2.2-2.1 4.6 3.4c.8.5 1.4.2 1.6-.7l3-14.1c.3-1.2-.4-1.7-1.4-1.3ZM8.6 13.9l9.3-5.9c.4-.3.8-.1.5.2L9.9 15.7l-.3 3.2-1-5Z"></path></svg></span>
-              <span class="s-body"><div class="s-title">Telegram Support</div></span>
-              <span class="s-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"></path></svg></span>
-            </a>
-            <a class="support-item sp-group" id="support-group" href="#" target="_blank" rel="noopener">
-              <span class="s-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"></circle><path d="M3 19c.8-3.2 3.2-5 6-5s5.2 1.8 6 5"></path><path d="M16 4.5a3 3 0 0 1 0 5.8"></path><path d="M18.5 14c2 .5 3.2 1.9 3.7 5"></path></svg></span>
-              <span class="s-body"><div class="s-title">Telegram Group</div></span>
-              <span class="s-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"></path></svg></span>
-            </a>
-          </div>
-        </div>
-
-        <button class="btn danger" style="margin:16px 0 8px;" onclick="doLogout()">Log out</button>
-      </section>
-    </main>
-
-
-    <nav class="bottomnav">
-      <button class="active" data-page="home" onclick="switchPage('home')">
-        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.5 12 4l8 7.5"></path><path d="M6 10v9a1 1 0 0 0 1 1h4v-6h2v6h4a1 1 0 0 0 1-1v-9"></path></svg></span>
-        Home
-      </button>
-      <button data-page="refer" onclick="switchPage('refer')">
-        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 15 15 9"></path><path d="M13.5 6.5 15 5a3.5 3.5 0 1 1 5 5l-1.5 1.5"></path><path d="M10.5 17.5 9 19a3.5 3.5 0 1 1-5-5l1.5-1.5"></path></svg></span>
-        Refer
-      </button>
-      <button data-page="wallet" onclick="switchPage('wallet')">
-        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"></path><path d="M3 8V6a2 2 0 0 1 2-2h9"></path><path d="M16 13h3"></path></svg></span>
-        Wallet
-      </button>
-      <button data-page="profile" onclick="switchPage('profile')">
-        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"></circle><path d="M5 20c1.2-3.6 4-5.5 7-5.5s5.8 1.9 7 5.5"></path></svg></span>
-        Profile
-      </button>
-    </nav>
-  </div>
-</div>
-
-<div class="toast" id="toast"></div>
-
-<div class="overlay-screen hidden" id="suspend-screen">
-  <div class="ov-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"></circle><path d="m8 8 8 8"></path></svg></div>
-  <h2>Account suspended</h2>
-  <p id="suspend-message">Your account has been temporarily suspended. Please contact support if you think this is a mistake.</p>
-  <button class="btn danger" style="max-width:220px;" onclick="doLogout()">Log out</button>
-</div>
-
-<div class="notice-backdrop hidden" id="notice-backdrop">
-  <div class="notice-modal">
-    <img id="notice-image" src="" style="width:100%; border-radius:14px; margin-bottom:14px; display:none;" onerror="this.style.display='none'">
-    <h3 id="notice-title">Notice</h3>
-    <p id="notice-body"></p>
-    <a id="notice-action-btn" href="#" target="_blank" rel="noopener" class="btn secondary" style="display:none; text-align:center; text-decoration:none; margin-bottom:10px;"></a>
-    <button class="btn" onclick="dismissNotice()">Got it</button>
+        <button class="btn" onclick="addCurrency()">Add / update currency</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -573,543 +315,594 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
-let currentUser = null;
-let userData = null;
-let allTasks = {};
-let mySubmissions = {};
-let withdrawSettings = { min: 120, max: 5000 };
+/* Default admin sign-in. On first login this account is created
+   automatically and saved as the authorized admin in the database —
+   after that, sign in with whatever email/password you've set. */
+const DEFAULT_ADMIN_EMAIL = "admin@gmail.com";
+const DEFAULT_ADMIN_PASSWORD = "@admin123";
+const USD_RATE = 120; // 1 USD ≈ ৳120
 
-/* ===================== Helpers ===================== */
-function showToast(msg){
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'), 2600);
-}
-function genReferCode(uid){
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let out = '';
-  for(let i=0;i<6;i++) out += chars[Math.floor(Math.random()*chars.length)];
-  return out;
-}
 function money(n){ return '৳' + (Number(n)||0).toFixed(2); }
-const USD_RATE = 120; // 1 USD ≈ ৳120 (fallback if BDT isn't in the admin-managed currency list yet)
 function moneyUSD(n){ return '$' + ((Number(n)||0)/USD_RATE).toFixed(2); }
 
-/* Wallet display currencies — managed by the admin (settings/currencies).
-   Each entry: { name, symbol, rate (units per 1 USD), enabled }. */
-let walletCurrencies = {};
-function loadWalletCurrencies(){
-  db.ref('settings/currencies').on('value', snap => {
-    walletCurrencies = snap.val() || {};
-    populateCurrencyDropdown();
-    updateWalletCurrencyDisplay();
+/* ===================== Admin auth ===================== */
+function adminLogin(){
+  const email = document.getElementById('admin-email').value.trim();
+  const password = document.getElementById('admin-password').value;
+  const errEl = document.getElementById('admin-login-err');
+  errEl.textContent = '';
+
+  auth.signInWithEmailAndPassword(email, password).catch(err => {
+    if(err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential' || err.code === 'auth/invalid-login-credentials'){
+      // First time ever — create this admin account automatically.
+      auth.createUserWithEmailAndPassword(email, password).catch(err2 => {
+        errEl.textContent = err2.message;
+      });
+    } else {
+      errEl.textContent = err.message;
+    }
   });
 }
 
-function populateCurrencyDropdown(){
-  const select = document.getElementById('wallet-currency-select');
-  const previousValue = select.value;
-  const entries = Object.entries(walletCurrencies)
-    .filter(([code, c]) => c.enabled)
-    .sort((a,b) => a[0].localeCompare(b[0]));
-
-  if(entries.length === 0){
-    select.innerHTML = '<option value="">No other currencies available</option>';
+auth.onAuthStateChanged(user => {
+  if(!user){
+    document.getElementById('login-screen').classList.remove('hidden');
+    document.getElementById('admin-app').classList.add('hidden');
     return;
   }
-  select.innerHTML = entries.map(([code, c]) => `<option value="${code}">${c.name} (${code})</option>`).join('');
 
-  if(entries.some(([code]) => code === previousValue)){
-    select.value = previousValue;
-  } else if(entries.some(([code]) => code === 'BDT')){
-    select.value = 'BDT';
-  }
+  db.ref('adminMeta/email').get().then(snap => {
+    const authorizedEmail = snap.exists() ? snap.val() : null;
+
+    if(!authorizedEmail){
+      // No admin claimed yet — this is the first-ever sign-in, claim it.
+      db.ref('adminMeta/email').set(user.email).then(() => grantAdminAccess(user));
+    } else if(user.email === authorizedEmail){
+      grantAdminAccess(user);
+    } else {
+      document.getElementById('admin-login-err').textContent = 'This account is not authorized for admin access.';
+      auth.signOut();
+    }
+  });
+});
+
+function grantAdminAccess(user){
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('admin-app').classList.remove('hidden');
+  document.getElementById('cur-admin-email').value = user.email;
+  initAdminData();
 }
 
-function updateWalletCurrencyDisplay(){
-  const el = document.getElementById('wallet-balance-converted');
-  const code = document.getElementById('wallet-currency-select').value;
-  if(!userData){ return; }
-  const usd = (Number(userData.balance)||0) / USD_RATE;
+function updateAdminCredentials(){
+  const newEmail = document.getElementById('new-admin-email').value.trim();
+  const newPassword = document.getElementById('new-admin-password').value;
+  const msgEl = document.getElementById('admin-cred-msg');
+  msgEl.style.display = 'none';
 
-  const info = walletCurrencies[code];
-  if(!info){
-    // Fallback while currencies haven't loaded yet — show plain BDT.
-    el.textContent = '≈ ' + money(userData.balance);
+  if(!newEmail && !newPassword){
+    msgEl.style.color = 'var(--danger)';
+    msgEl.textContent = 'Enter a new email and/or password to update.';
+    msgEl.style.display = 'block';
     return;
   }
-  el.textContent = `≈ ${info.symbol||''}${(usd * info.rate).toFixed(2)} ${code}`;
+
+  const tasks = [];
+  if(newEmail) tasks.push(auth.currentUser.updateEmail(newEmail).then(() => db.ref('adminMeta/email').set(newEmail)));
+  if(newPassword) tasks.push(auth.currentUser.updatePassword(newPassword));
+
+  Promise.all(tasks).then(() => {
+    msgEl.style.color = 'var(--teal)';
+    msgEl.textContent = 'Admin credentials updated.';
+    msgEl.style.display = 'block';
+    if(newEmail) document.getElementById('cur-admin-email').value = newEmail;
+    document.getElementById('new-admin-email').value = '';
+    document.getElementById('new-admin-password').value = '';
+  }).catch(err => {
+    msgEl.style.color = 'var(--danger)';
+    msgEl.textContent = 'Please sign out and sign back in, then try again: ' + err.message;
+    msgEl.style.display = 'block';
+  });
+}
+
+/* ===================== Tabs ===================== */
+function switchTab(tab){
+  document.querySelectorAll('.tabbar button').forEach(b => b.classList.toggle('active', b.dataset.tab===tab));
+  document.querySelectorAll('.tabpage').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+}
+
+/* ===================== Data init ===================== */
+let allUsers = {};
+let allTasksData = {};
+
+function initAdminData(){
+  db.ref('users').on('value', snap => {
+    allUsers = snap.val() || {};
+    renderUsers();
+    document.getElementById('s-users').textContent = Object.keys(allUsers).length;
+    let paidOut = 0;
+    Object.values(allUsers).forEach(u => paidOut += (u.totalWithdrawn||0));
+    document.getElementById('s-paidout').textContent = money(paidOut);
+  });
+
+  db.ref('tasks').on('value', snap => {
+    allTasksData = snap.val() || {};
+    renderTasksAdmin();
+  });
+
+  db.ref('submissions').on('value', snap => {
+    renderSubmissions(snap.val() || {});
+  });
+
+  db.ref('withdrawals').on('value', snap => {
+    renderWithdrawals(snap.val() || {});
+  });
+
+  db.ref('settings/withdraw').on('value', snap => {
+    const s = snap.val() || { min: 120, max: 5000 };
+    document.getElementById('set-min').value = s.min;
+    document.getElementById('set-max').value = s.max;
+  });
+
+  db.ref('settings/support').on('value', snap => {
+    const s = snap.val() || {};
+    document.getElementById('sup-whatsapp').value = s.whatsapp || '';
+    document.getElementById('sup-telegram').value = s.telegram || '';
+    document.getElementById('sup-group').value = s.group || '';
+  });
+
+  db.ref('settings/currencies').get().then(snap => {
+    if(!snap.exists()){
+      // First time — seed a starter set of currencies. Admin can add/edit/block any of these anytime.
+      const seed = {
+        BDT: { name: 'Bangladeshi Taka', symbol: '৳', rate: 120, enabled: true },
+        INR: { name: 'Indian Rupee', symbol: '₹', rate: 83.5, enabled: true },
+        PKR: { name: 'Pakistani Rupee', symbol: '₨', rate: 278, enabled: true },
+        NPR: { name: 'Nepalese Rupee', symbol: 'रू', rate: 133, enabled: true },
+        LKR: { name: 'Sri Lankan Rupee', symbol: 'Rs', rate: 305, enabled: true },
+        SAR: { name: 'Saudi Riyal', symbol: 'ر.س', rate: 3.75, enabled: true },
+        AED: { name: 'UAE Dirham', symbol: 'د.إ', rate: 3.67, enabled: true },
+        QAR: { name: 'Qatari Riyal', symbol: 'ر.ق', rate: 3.64, enabled: true },
+        KWD: { name: 'Kuwaiti Dinar', symbol: 'د.ك', rate: 0.31, enabled: true },
+        OMR: { name: 'Omani Rial', symbol: 'ر.ع', rate: 0.38, enabled: true },
+        BHD: { name: 'Bahraini Dinar', symbol: '.د.ب', rate: 0.38, enabled: true },
+        MYR: { name: 'Malaysian Ringgit', symbol: 'RM', rate: 4.7, enabled: true },
+        SGD: { name: 'Singapore Dollar', symbol: 'S$', rate: 1.34, enabled: true },
+        IDR: { name: 'Indonesian Rupiah', symbol: 'Rp', rate: 16200, enabled: true },
+        PHP: { name: 'Philippine Peso', symbol: '₱', rate: 58.5, enabled: true },
+        THB: { name: 'Thai Baht', symbol: '฿', rate: 34.5, enabled: true },
+        VND: { name: 'Vietnamese Dong', symbol: '₫', rate: 25400, enabled: true },
+        CNY: { name: 'Chinese Yuan', symbol: '¥', rate: 7.25, enabled: true },
+        JPY: { name: 'Japanese Yen', symbol: '¥', rate: 150, enabled: true },
+        KRW: { name: 'South Korean Won', symbol: '₩', rate: 1370, enabled: true },
+        GBP: { name: 'British Pound', symbol: '£', rate: 0.79, enabled: true },
+        EUR: { name: 'Euro', symbol: '€', rate: 0.92, enabled: true },
+        AUD: { name: 'Australian Dollar', symbol: 'A$', rate: 1.53, enabled: true },
+        CAD: { name: 'Canadian Dollar', symbol: 'C$', rate: 1.37, enabled: true },
+        TRY: { name: 'Turkish Lira', symbol: '₺', rate: 34, enabled: true },
+        EGP: { name: 'Egyptian Pound', symbol: 'E£', rate: 49, enabled: true },
+        NGN: { name: 'Nigerian Naira', symbol: '₦', rate: 1550, enabled: true },
+        KES: { name: 'Kenyan Shilling', symbol: 'KSh', rate: 129, enabled: true },
+        ZAR: { name: 'South African Rand', symbol: 'R', rate: 18.3, enabled: true },
+        BRL: { name: 'Brazilian Real', symbol: 'R$', rate: 5.1, enabled: true },
+        MXN: { name: 'Mexican Peso', symbol: 'Mex$', rate: 17, enabled: true },
+        RUB: { name: 'Russian Ruble', symbol: '₽', rate: 92, enabled: true }
+      };
+      db.ref('settings/currencies').set(seed);
+    }
+  });
+
+  db.ref('settings/currencies').on('value', snap => {
+    renderCurrencyList(snap.val() || {});
+  });
+}
+
+/* ===================== Tasks (create / list / toggle) ===================== */
+function createTask(){
+  const title = document.getElementById('nt-title').value.trim();
+  const reward = parseFloat(document.getElementById('nt-reward').value);
+  const desc = document.getElementById('nt-desc').value.trim();
+  const link = document.getElementById('nt-link').value.trim();
+  const platform = document.getElementById('nt-platform').value;
+  const images = document.getElementById('nt-images').value.split('\n').map(s => s.trim()).filter(Boolean);
+  const proofType = document.getElementById('nt-prooftype').value;
+  if(!title || !reward){ alert('Please enter a title and reward.'); return; }
+
+  db.ref('tasks').push({
+    title, reward, description: desc, link, platform, images, proofType, status: 'active', createdAt: Date.now()
+  }).then(() => {
+    document.getElementById('nt-title').value='';
+    document.getElementById('nt-reward').value='';
+    document.getElementById('nt-desc').value='';
+    document.getElementById('nt-link').value='';
+    document.getElementById('nt-images').value='';
+  });
 }
 
 const PLATFORM_LABELS = {
   telegram: 'Telegram', twitter: 'Twitter (X)', instagram: 'Instagram',
-  facebook: 'Facebook', youtube: 'YouTube', tiktok: 'TikTok', other: 'Task'
+  facebook: 'Facebook', youtube: 'YouTube', tiktok: 'TikTok', other: 'Other'
 };
 const PLATFORM_COLORS = {
   telegram: '#2aabee', twitter: '#8899a6', instagram: '#d6249f',
   facebook: '#1877f2', youtube: '#ff0000', tiktok: '#8899a6', other: '#7b61ff'
 };
 
-/* Reusable inline SVG icon strings (organic, rounded stroke style) */
-const ICONS = {
-  clock: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3.5 2"></path></svg>`,
-  checkCircle: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="m8.5 12.5 2.3 2.3L16 10"></path></svg>`,
-  xCircle: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="m9.5 9.5 5 5m0-5-5 5"></path></svg>`,
-  inbox: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12 6.5 5h11L20 12"></path><path d="M4 12v6a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-6"></path><path d="M4 12h5a1 1 0 0 1 1 1 2 2 0 0 0 4 0 1 1 0 0 1 1-1h5"></path></svg>`,
-  wallet: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"></path><path d="M3 8V6a2 2 0 0 1 2-2h9"></path><path d="M16 13h3"></path></svg>`,
-  methodIcon(method){
-    if(method === 'bkash') return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 3 7v10l9 5 9-5V7z"></path><path d="M12 12 3 7"></path><path d="M12 12v9"></path><path d="M12 12l9-5"></path></svg>`;
-    if(method === 'nagad') return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="2.5"></rect><circle cx="12" cy="12" r="2.6"></circle></svg>`;
-    return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"></circle><path d="M8 9h8"></path><path d="M12 9v10"></path></svg>`;
+function renderTasksAdmin(){
+  const list = document.getElementById('tasks-list');
+  const entries = Object.entries(allTasksData).sort((a,b) => (b[1].createdAt||0) - (a[1].createdAt||0));
+  if(entries.length === 0){
+    list.innerHTML = '<div class="empty">No tasks published yet.</div>';
+    return;
   }
-};
-
-/* ===================== Auth screen switching ===================== */
-function showAuth(which){
-  document.getElementById('login-card').classList.toggle('hidden', which!=='login');
-  document.getElementById('register-card').classList.toggle('hidden', which!=='register');
+  list.innerHTML = entries.map(([id, t]) => `
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:14px;">
+        ${t.images && t.images.length ? `<img src="${t.images[0]}" style="width:64px; height:64px; border-radius:12px; object-fit:cover; flex:none;" onerror="this.style.display='none'">` : ''}
+        <div style="flex:1;">
+          <span class="badge ${t.status==='active'?'b-active':'b-inactive'}">${t.status}</span>
+          <span class="badge" style="background:${PLATFORM_COLORS[t.platform]||'#7b61ff'}22; color:${PLATFORM_COLORS[t.platform]||'#7b61ff'};">${PLATFORM_LABELS[t.platform]||'Other'}</span>
+          <h3 style="margin-top:8px;">${t.title}</h3>
+          <p style="color:var(--text-dim); font-size:13px; margin-top:4px;">${t.description||''}</p>
+          <p style="font-size:12px; color:var(--text-dim); margin-top:6px;">Reward: <b style="color:var(--teal)">${money(t.reward)}</b> (${moneyUSD(t.reward)}) · Proof: ${t.proofType}</p>
+          ${t.link ? `<p style="font-size:12px; margin-top:4px;"><a href="${t.link}" target="_blank" class="proof-link">${t.link}</a></p>` : ''}
+        </div>
+        <div class="actions">
+          <button class="btn secondary" onclick="toggleTask('${id}','${t.status}')">${t.status==='active' ? 'Deactivate' : 'Activate'}</button>
+          <button class="btn danger" onclick="deleteTask('${id}')">Delete</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
 }
 
-function doRegister(){
-  const name = document.getElementById('reg-name').value.trim();
-  const email = document.getElementById('reg-email').value.trim();
-  const password = document.getElementById('reg-password').value;
-  const referInput = document.getElementById('reg-refer').value.trim().toUpperCase();
-  const errEl = document.getElementById('register-err');
-  errEl.style.display='none';
+function toggleTask(id, currentStatus){
+  db.ref('tasks/' + id + '/status').set(currentStatus === 'active' ? 'inactive' : 'active');
+}
+function deleteTask(id){
+  if(confirm('Delete this task permanently?')) db.ref('tasks/' + id).remove();
+}
 
-  if(!name || !email || password.length < 6){
-    errEl.textContent = 'Please fill all fields. Password needs at least 6 characters.';
-    errEl.style.display='block'; return;
-  }
+/* ===================== Submissions (approve / reject with referral logic) ===================== */
+function renderSubmissions(subs){
+  const body = document.getElementById('submissions-body');
+  const emptyEl = document.getElementById('submissions-empty');
+  const entries = Object.entries(subs).sort((a,b) => (b[1].submittedAt||0) - (a[1].submittedAt||0));
+  document.getElementById('s-pending').textContent = entries.filter(([id,s]) => s.status==='pending').length;
 
-  const finish = (referrerUid) => {
-    auth.createUserWithEmailAndPassword(email, password).then(cred => {
-      const uid = cred.user.uid;
-      const code = genReferCode(uid);
-      const newUser = {
-        name, email, referCode: code, referredBy: referrerUid || null,
-        balance: 0, totalEarned: 0, totalWithdrawn: 0,
-        referralCount: 0, approvedTasksCount: 0, referBonusGiven: false,
-        createdAt: Date.now()
+  if(entries.length === 0){ body.innerHTML=''; emptyEl.classList.remove('hidden'); return; }
+  emptyEl.classList.add('hidden');
+
+  body.innerHTML = entries.map(([id, s]) => {
+    const cls = s.status==='pending' ? 'b-pending' : s.status==='approved' ? 'b-approved' : 'b-rejected';
+    const proofHtml = s.proof
+      ? (s.proof.startsWith('http') ? `<a class="proof-link" href="${s.proof}" target="_blank">${s.proof}</a>` : s.proof)
+      : '<span style="color:var(--text-dim)">—</span>';
+    const actionHtml = s.status === 'pending'
+      ? `<div class="actions"><button class="btn ok" onclick="approveSubmission('${id}')">Approve</button><button class="btn danger" onclick="rejectSubmission('${id}')">Reject</button></div>`
+      : (s.status === 'rejected' && s.rejectReason ? `<span style="color:var(--text-dim); font-size:12px;">Reason: ${s.rejectReason}</span>` : '—');
+    return `<tr>
+      <td>${s.userName||''}</td>
+      <td>${s.taskTitle||''}</td>
+      <td style="max-width:220px;">${proofHtml}</td>
+      <td>${money(s.reward)}</td>
+      <td><span class="badge ${cls}">${s.status}</span></td>
+      <td>${actionHtml}</td>
+    </tr>`;
+  }).join('');
+}
+
+/*
+  Referral rule:
+  - A referred user's first 3 approved tasks earn their referrer NOTHING.
+  - The moment the referred user's 3rd task is approved: the referral becomes
+    "valid" (referrer's referralCount goes up by 1), the referred user gets a
+    one-time ৳10 welcome bonus, but still no commission on this 3rd task.
+  - From the 4th approved task onward, the referrer earns 20% of every
+    task reward the referred user earns.
+*/
+function approveSubmission(subId){
+  db.ref('submissions/' + subId).get().then(snap => {
+    const s = snap.val();
+    if(!s || s.status !== 'pending') return;
+
+    db.ref('submissions/' + subId + '/status').set('approved');
+
+    const userRef = db.ref('users/' + s.uid);
+    userRef.get().then(uSnap => {
+      const u = uSnap.val();
+      if(!u) return;
+
+      const newApprovedCount = (u.approvedTasksCount||0) + 1;
+      const updates = {
+        balance: (u.balance||0) + Number(s.reward),
+        totalEarned: (u.totalEarned||0) + Number(s.reward),
+        approvedTasksCount: newApprovedCount
       };
-      db.ref('users/' + uid).set(newUser).then(() => {
-        db.ref('referCodes/' + code).set(uid);
-        // "Total referred" counts immediately at sign-up.
-        // "referralCount" (valid referral) only counts once this new user
-        // completes their first 3 approved tasks (see admin approval logic).
-        if(referrerUid){
-          db.ref('users/' + referrerUid + '/totalReferred').transaction(v => (v||0) + 1);
-        }
-      });
-    }).catch(err => {
-      errEl.textContent = err.message;
-      errEl.style.display='block';
-    });
-  };
 
-  if(referInput){
-    db.ref('referCodes/' + referInput).get().then(snap => {
-      if(snap.exists()) finish(snap.val());
-      else finish(null);
-    });
-  } else {
-    finish(null);
-  }
-}
+      if(u.referredBy && newApprovedCount === 3 && !u.referBonusGiven){
+        // Validation point: referral becomes valid + one-time bonus to the referred user.
+        updates.balance += 10;
+        updates.totalEarned += 10;
+        updates.referBonusGiven = true;
+        db.ref('users/' + u.referredBy + '/referralCount').transaction(v => (v||0) + 1);
+      }
 
-function doLogin(){
-  const email = document.getElementById('login-email').value.trim();
-  const password = document.getElementById('login-password').value;
-  const errEl = document.getElementById('login-err');
-  errEl.style.display='none';
-  auth.signInWithEmailAndPassword(email, password).catch(err => {
-    errEl.textContent = err.message;
-    errEl.style.display='block';
-  });
-}
+      userRef.update(updates);
 
-function doLogout(){
-  auth.signOut();
-}
-
-/* ===================== Auth state ===================== */
-auth.onAuthStateChanged(user => {
-  if(user){
-    currentUser = user;
-    document.getElementById('auth-screen').classList.add('hidden');
-    document.getElementById('app-screen').classList.remove('hidden');
-    loadUserData();
-    loadTasks();
-    loadWithdrawSettings();
-    loadWithdrawHistory();
-    checkNotices();
-    loadSupportLinks();
-    loadWalletCurrencies();
-  } else {
-    currentUser = null;
-    document.getElementById('auth-screen').classList.remove('hidden');
-    document.getElementById('app-screen').classList.add('hidden');
-  }
-});
-
-/* ===================== Load user profile ===================== */
-function loadUserData(){
-  db.ref('users/' + currentUser.uid).on('value', snap => {
-    userData = snap.val();
-    if(!userData) return;
-
-    // Suspension check — runs on every update so a live block takes effect immediately.
-    const now = Date.now();
-    const isBlocked = userData.blocked && (!userData.blockedUntil || userData.blockedUntil > now);
-    const suspendScreen = document.getElementById('suspend-screen');
-    if(isBlocked){
-      const msgEl = document.getElementById('suspend-message');
-      msgEl.textContent = userData.blockedUntil
-        ? `Your account is suspended until ${new Date(userData.blockedUntil).toLocaleString()}.`
-        : 'Your account has been suspended. Please contact support if you think this is a mistake.';
-      suspendScreen.classList.remove('hidden');
-    } else {
-      suspendScreen.classList.add('hidden');
-    }
-
-    document.getElementById('refer-code-display').textContent = userData.referCode || '------';
-    document.getElementById('stat-total-referred').textContent = userData.totalReferred || 0;
-    document.getElementById('stat-referrals').textContent = userData.referralCount || 0;
-    document.getElementById('wallet-balance-usd').textContent = moneyUSD(userData.balance);
-    updateWalletCurrencyDisplay();
-    document.getElementById('profile-name').textContent = userData.name;
-    document.getElementById('profile-email').textContent = userData.email;
-    document.getElementById('profile-initial').textContent = (userData.name||'N')[0].toUpperCase();
-    document.getElementById('profile-refercode').textContent = userData.referCode || '------';
-    document.getElementById('p-referrals').textContent = userData.referralCount || 0;
-    document.getElementById('p-earned').textContent = money(userData.totalEarned);
-    document.getElementById('p-withdrawn').textContent = money(userData.totalWithdrawn);
-    document.getElementById('p-tasks').textContent = userData.approvedTasksCount || 0;
-
-    // referral earnings = 20% share, approximate from referral commissions log
-    db.ref('referralEarnings/' + currentUser.uid).get().then(s => {
-      document.getElementById('stat-refer-earn').textContent = moneyUSD(s.val() || 0);
-    });
-  });
-}
-
-/* ===================== Support links (set by admin) ===================== */
-function loadSupportLinks(){
-  db.ref('settings/support').on('value', snap => {
-    const s = snap.val() || {};
-    document.getElementById('support-whatsapp').href = s.whatsapp || '#';
-    document.getElementById('support-telegram').href = s.telegram || '#';
-    document.getElementById('support-group').href = s.group || '#';
-  });
-}
-let pendingNotices = [];
-function checkNotices(){
-  const personalRef = db.ref('notices/personal/' + currentUser.uid);
-  const broadcastRef = db.ref('notices/broadcast');
-
-  Promise.all([personalRef.get(), broadcastRef.get(), db.ref('users/' + currentUser.uid + '/lastSeenBroadcast').get()])
-    .then(([personalSnap, broadcastSnap, lastSeenSnap]) => {
-      pendingNotices = [];
-      if(personalSnap.exists() && !personalSnap.val().read){
-        const p = personalSnap.val();
-        pendingNotices.push({
-          type: 'personal', title: 'Message from support', body: p.message,
-          image: p.image || null, buttonLabel: p.buttonLabel || null, buttonUrl: p.buttonUrl || null
+      // 20% commission to referrer — only once the referral is validated (after task 3).
+      if(u.referredBy && newApprovedCount > 3){
+        const commission = Number(s.reward) * 0.20;
+        const refRef = db.ref('users/' + u.referredBy);
+        refRef.get().then(refSnap => {
+          const ref = refSnap.val();
+          if(!ref) return;
+          refRef.update({
+            balance: (ref.balance||0) + commission,
+            totalEarned: (ref.totalEarned||0) + commission
+          });
+          db.ref('referralEarnings/' + u.referredBy).transaction(v => (v||0) + commission);
         });
       }
-      if(broadcastSnap.exists()){
-        const b = broadcastSnap.val();
-        const lastSeen = lastSeenSnap.exists() ? lastSeenSnap.val() : 0;
-        if(b.createdAt > lastSeen){
-          pendingNotices.push({
-            type: 'broadcast', title: 'Announcement', body: b.message, createdAt: b.createdAt,
-            image: b.image || null, buttonLabel: b.buttonLabel || null, buttonUrl: b.buttonUrl || null
-          });
-        }
-      }
-      showNextNotice();
     });
+  });
 }
 
-function showNextNotice(){
-  if(pendingNotices.length === 0) return;
-  const n = pendingNotices[0];
-  document.getElementById('notice-title').textContent = n.title;
-  document.getElementById('notice-body').textContent = n.body;
+function rejectSubmission(subId){
+  const reason = prompt('Reason for rejecting this submission (shown to the user):');
+  if(reason === null) return; // admin cancelled
+  db.ref('submissions/' + subId).update({
+    status: 'rejected',
+    rejectReason: reason.trim() || 'No reason provided.'
+  });
+}
 
-  const imgEl = document.getElementById('notice-image');
-  if(n.image){ imgEl.src = n.image; imgEl.style.display = 'block'; }
-  else { imgEl.style.display = 'none'; }
+/* ===================== Withdrawals ===================== */
+function renderWithdrawals(wds){
+  const body = document.getElementById('withdrawals-body');
+  const emptyEl = document.getElementById('withdrawals-empty');
+  const entries = Object.entries(wds).sort((a,b) => (b[1].requestedAt||0) - (a[1].requestedAt||0));
+  document.getElementById('s-withdraw').textContent = entries.filter(([id,w]) => w.status==='pending').length;
 
-  const btnEl = document.getElementById('notice-action-btn');
-  if(n.buttonLabel && n.buttonUrl){
-    btnEl.textContent = n.buttonLabel;
-    btnEl.href = n.buttonUrl;
-    btnEl.style.display = 'block';
-  } else {
-    btnEl.style.display = 'none';
+  if(entries.length === 0){ body.innerHTML=''; emptyEl.classList.remove('hidden'); return; }
+  emptyEl.classList.add('hidden');
+
+  body.innerHTML = entries.map(([id, w]) => {
+    const cls = w.status==='pending' ? 'b-pending' : w.status==='approved' ? 'b-approved' : 'b-rejected';
+    const actionHtml = w.status === 'pending'
+      ? `<div class="actions"><button class="btn ok" onclick="approveWithdraw('${id}')">Mark paid</button><button class="btn danger" onclick="rejectWithdraw('${id}')">Reject</button></div>`
+      : (w.status === 'rejected' && w.rejectReason ? `<span style="color:var(--text-dim); font-size:12px;">Reason: ${w.rejectReason}</span>` : '—');
+    return `<tr>
+      <td>${w.userName||''}</td>
+      <td>${(w.method||'').toUpperCase()}</td>
+      <td>${w.account||''}</td>
+      <td>${money(w.amount)}</td>
+      <td><span class="badge ${cls}">${w.status}</span></td>
+      <td>${actionHtml}</td>
+    </tr>`;
+  }).join('');
+}
+
+function approveWithdraw(id){
+  db.ref('withdrawals/' + id).get().then(snap => {
+    const w = snap.val();
+    if(!w || w.status !== 'pending') return;
+    db.ref('withdrawals/' + id + '/status').set('approved');
+    db.ref('users/' + w.uid + '/totalWithdrawn').transaction(v => (v||0) + Number(w.amount));
+  });
+}
+
+function rejectWithdraw(id){
+  const reason = prompt('Reason for rejecting this withdrawal (shown to the user):');
+  if(reason === null) return; // admin cancelled
+  db.ref('withdrawals/' + id).get().then(snap => {
+    const w = snap.val();
+    if(!w || w.status !== 'pending') return;
+    // refund the balance that was held when the request was made
+    db.ref('users/' + w.uid + '/balance').transaction(v => (v||0) + Number(w.amount));
+    db.ref('withdrawals/' + id).update({
+      status: 'rejected',
+      rejectReason: reason.trim() || 'No reason provided.'
+    });
+  });
+}
+
+/* ===================== Users ===================== */
+function renderUsers(){
+  const body = document.getElementById('users-body');
+  const query = (document.getElementById('user-search').value || '').trim().toLowerCase();
+  let entries = Object.entries(allUsers).sort((a,b) => (b[1].createdAt||0) - (a[1].createdAt||0));
+
+  if(query){
+    entries = entries.filter(([uid, u]) =>
+      (u.name||'').toLowerCase().includes(query) ||
+      (u.email||'').toLowerCase().includes(query) ||
+      (u.referCode||'').toLowerCase().includes(query)
+    );
   }
 
-  document.getElementById('notice-backdrop').classList.remove('hidden');
+  if(entries.length === 0){ body.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--text-dim);">No matching users.</td></tr>'; return; }
+  body.innerHTML = entries.map(([uid, u]) => {
+    const now = Date.now();
+    const isBlocked = u.blocked && (!u.blockedUntil || u.blockedUntil > now);
+    const statusBadge = isBlocked
+      ? `<span class="badge b-rejected">Suspended</span>`
+      : `<span class="badge b-active">Active</span>`;
+    return `<tr>
+      <td>${u.name||''}</td>
+      <td>${u.email||''}</td>
+      <td style="font-family:'Space Grotesk',sans-serif; font-weight:600;">${u.referCode||''}</td>
+      <td>${money(u.balance)}</td>
+      <td>${statusBadge}</td>
+      <td>${u.referralCount||0}</td>
+      <td><button class="btn secondary" onclick="openUserEditor('${uid}')">Manage</button></td>
+    </tr>`;
+  }).join('');
 }
 
-function dismissNotice(){
-  const n = pendingNotices.shift();
-  document.getElementById('notice-backdrop').classList.add('hidden');
-  if(n){
-    if(n.type === 'personal'){
-      db.ref('notices/personal/' + currentUser.uid + '/read').set(true);
-    } else if(n.type === 'broadcast'){
-      db.ref('users/' + currentUser.uid + '/lastSeenBroadcast').set(n.createdAt);
-    }
-  }
-  if(pendingNotices.length > 0) setTimeout(showNextNotice, 300);
+/* ===================== User editor (edit / suspend / reset / notice) ===================== */
+function openUserEditor(uid){
+  const u = allUsers[uid];
+  if(!u) return;
+  document.getElementById('ue-uid').value = uid;
+  document.getElementById('ue-name').value = u.name || '';
+  document.getElementById('ue-balance').value = u.balance || 0;
+  document.getElementById('ue-email').value = u.email || '';
+  document.getElementById('ue-blocked').value = u.blocked ? 'yes' : 'no';
+  document.getElementById('ue-blocked-until').value = u.blockedUntil ? new Date(u.blockedUntil - new Date().getTimezoneOffset()*60000).toISOString().slice(0,16) : '';
+  document.getElementById('ue-notice').value = '';
+  document.getElementById('ue-notice-image').value = '';
+  document.getElementById('ue-notice-btn-label').value = '';
+  document.getElementById('ue-notice-btn-url').value = '';
+  document.getElementById('ue-msg').style.display = 'none';
+  document.getElementById('user-editor-card').style.display = 'block';
+  document.getElementById('user-editor-card').scrollIntoView({behavior:'smooth'});
 }
 
-function copyAccountId(){
-  navigator.clipboard.writeText(userData.referCode || '');
-  showToast('Account ID copied');
-}
-function copyReferCode(){
-  navigator.clipboard.writeText(userData.referCode || '');
-  showToast('Referral code copied');
+function closeUserEditor(){
+  document.getElementById('user-editor-card').style.display = 'none';
 }
 
-function changePassword(){
-  const pw = document.getElementById('new-password').value;
-  const errEl = document.getElementById('pw-err');
-  errEl.style.display='none';
-  if(pw.length < 6){
-    errEl.textContent = 'Password needs at least 6 characters.';
-    errEl.style.display='block'; return;
-  }
-  currentUser.updatePassword(pw).then(() => {
-    showToast('Password updated');
-    document.getElementById('new-password').value='';
+function saveUserEdits(){
+  const uid = document.getElementById('ue-uid').value;
+  const name = document.getElementById('ue-name').value.trim();
+  const balance = parseFloat(document.getElementById('ue-balance').value) || 0;
+  const email = document.getElementById('ue-email').value.trim();
+  const blocked = document.getElementById('ue-blocked').value === 'yes';
+  const untilStr = document.getElementById('ue-blocked-until').value;
+  const blockedUntil = untilStr ? new Date(untilStr).getTime() : null;
+
+  db.ref('users/' + uid).update({ name, balance, email, blocked, blockedUntil }).then(() => {
+    const msg = document.getElementById('ue-msg');
+    msg.style.color = 'var(--teal)';
+    msg.textContent = 'User updated.';
+    msg.style.display = 'block';
+  });
+}
+
+function sendPasswordReset(){
+  const email = document.getElementById('ue-email').value.trim();
+  const msg = document.getElementById('ue-msg');
+  if(!email){ msg.style.color='var(--danger)'; msg.textContent='No email on file for this user.'; msg.style.display='block'; return; }
+  auth.sendPasswordResetEmail(email).then(() => {
+    msg.style.color = 'var(--teal)';
+    msg.textContent = 'Password reset email sent to ' + email;
+    msg.style.display = 'block';
   }).catch(err => {
-    errEl.textContent = 'Please log out and log back in, then try again.';
-    errEl.style.display='block';
+    msg.style.color = 'var(--danger)';
+    msg.textContent = err.message;
+    msg.style.display = 'block';
   });
 }
 
-/* ===================== Tasks ===================== */
-let activeTaskTab = 'all';
-function switchTaskTab(tab){
-  activeTaskTab = tab;
-  document.querySelectorAll('.tabbar button').forEach(b => b.classList.toggle('active', b.dataset.tab===tab));
-  renderTasks();
-}
-
-function loadTasks(){
-  db.ref('tasks').on('value', snap => {
-    allTasks = snap.val() || {};
-    renderTasks();
+function sendPersonalNotice(){
+  const uid = document.getElementById('ue-uid').value;
+  const message = document.getElementById('ue-notice').value.trim();
+  const image = document.getElementById('ue-notice-image').value.trim();
+  const buttonLabel = document.getElementById('ue-notice-btn-label').value.trim();
+  const buttonUrl = document.getElementById('ue-notice-btn-url').value.trim();
+  const msg = document.getElementById('ue-msg');
+  if(!message){ msg.style.color='var(--danger)'; msg.textContent='Write a message first.'; msg.style.display='block'; return; }
+  if(buttonLabel && !buttonUrl){ msg.style.color='var(--danger)'; msg.textContent='Add a button URL, or clear the button label.'; msg.style.display='block'; return; }
+  db.ref('notices/personal/' + uid).set({
+    message, image: image || null, buttonLabel: buttonLabel || null, buttonUrl: buttonUrl || null,
+    read: false, createdAt: Date.now()
+  }).then(() => {
+    msg.style.color = 'var(--teal)';
+    msg.textContent = 'Notice sent — they will see it next time they open the app.';
+    msg.style.display = 'block';
+    document.getElementById('ue-notice').value = '';
+    document.getElementById('ue-notice-image').value = '';
+    document.getElementById('ue-notice-btn-label').value = '';
+    document.getElementById('ue-notice-btn-url').value = '';
   });
-  db.ref('submissions').orderByChild('uid').equalTo(currentUser.uid).on('value', snap => {
-    mySubmissions = snap.val() || {};
-    renderTasks();
+}
+
+function sendBroadcast(){
+  const message = document.getElementById('broadcast-msg').value.trim();
+  const image = document.getElementById('broadcast-image').value.trim();
+  const buttonLabel = document.getElementById('broadcast-btn-label').value.trim();
+  const buttonUrl = document.getElementById('broadcast-btn-url').value.trim();
+  const status = document.getElementById('broadcast-status');
+  if(!message){ status.style.color='var(--danger)'; status.textContent='Write a message first.'; status.style.display='block'; return; }
+  if(buttonLabel && !buttonUrl){ status.style.color='var(--danger)'; status.textContent='Add a button URL, or clear the button label.'; status.style.display='block'; return; }
+  db.ref('notices/broadcast').set({
+    message, image: image || null, buttonLabel: buttonLabel || null, buttonUrl: buttonUrl || null,
+    createdAt: Date.now()
+  }).then(() => {
+    status.style.color = 'var(--teal)';
+    status.textContent = 'Broadcast sent to all users.';
+    status.style.display = 'block';
+    document.getElementById('broadcast-msg').value = '';
   });
 }
 
-function submissionForTask(taskId){
-  return Object.entries(mySubmissions).find(([id,s]) => s.taskId === taskId);
-}
-
-function renderTasks(){
-  const list = document.getElementById('task-list');
-  list.innerHTML = '';
-  let items = [];
-
-  if(activeTaskTab === 'all'){
-    // Once a task has any submission (pending/approved/rejected), it moves out
-    // of "All Tasks" entirely and only appears under its matching status tab.
-    items = Object.entries(allTasks).filter(([id,t]) => t.status === 'active' && !submissionForTask(id));
-  } else {
-    items = Object.entries(mySubmissions)
-      .filter(([id,s]) => s.status === activeTaskTab)
-      .map(([id,s]) => [s.taskId, allTasks[s.taskId] || {title:s.taskTitle, reward:s.reward, description:''}, s]);
-  }
-
-  if(items.length === 0){
-    list.innerHTML = `<div class="empty-state"><div class="icon">${ICONS.inbox}</div>No tasks here yet.</div>`;
+/* ===================== Currencies ===================== */
+function renderCurrencyList(currencies){
+  const list = document.getElementById('currency-list');
+  const entries = Object.entries(currencies).sort((a,b) => a[0].localeCompare(b[0]));
+  if(entries.length === 0){
+    list.innerHTML = '<p style="color:var(--text-dim); font-size:13px;">No currencies added yet.</p>';
     return;
   }
-
-  items.forEach(entry => {
-    const taskId = entry[0], task = entry[1];
-    const existingSub = activeTaskTab === 'all' ? submissionForTask(taskId) : [null, entry[2]];
-    const sub = existingSub ? existingSub[1] : null;
-
-    const div = document.createElement('div');
-    div.className = 'task-card';
-    let statusHtml = '';
-    let reasonHtml = '';
-    if(sub){
-      const cls = sub.status === 'pending' ? 'status-pending' : sub.status === 'rejected' ? 'status-rejected' : 'status-approved';
-      const icon = sub.status === 'pending' ? ICONS.clock : sub.status === 'rejected' ? ICONS.xCircle : ICONS.checkCircle;
-      statusHtml = `<span class="task-status ${cls}">${icon}${sub.status}</span><br>`;
-      if(sub.status === 'rejected' && sub.rejectReason){
-        reasonHtml = `<div style="background:rgba(255,84,112,0.1); border-radius:10px; padding:8px 12px; font-size:12.5px; color:var(--danger); margin-bottom:10px;">Reason: ${sub.rejectReason}</div>`;
-      }
-    }
-
-    let actionHtml = '';
-    if(!sub || sub.status === 'rejected'){
-      const linkBtn = task.link
-        ? `<a href="${task.link}" target="_blank" rel="noopener" class="btn small secondary" style="display:block; text-align:center; text-decoration:none; margin-bottom:8px;">Open task link</a>`
-        : '';
-      if(task.proofType === 'image'){
-        actionHtml = `
-          ${linkBtn}
-          <div class="field"><input type="text" placeholder="Paste your screenshot/proof image URL" id="proof-${taskId}"></div>
-          <button class="btn small" onclick="submitTask('${taskId}')">Submit proof</button>`;
-      } else if(task.proofType === 'username'){
-        actionHtml = `
-          ${linkBtn}
-          <div class="field"><input type="text" placeholder="Your username" id="proof-${taskId}"></div>
-          <button class="btn small" onclick="submitTask('${taskId}')">Submit proof</button>`;
-      } else {
-        actionHtml = `${linkBtn}<button class="btn small" onclick="submitTask('${taskId}')">Mark as complete</button>`;
-      }
-    }
-
-    const platformBadge = task.platform
-      ? `<span class="task-status" style="background:${(PLATFORM_COLORS[task.platform]||'#7b61ff')}22; color:${PLATFORM_COLORS[task.platform]||'#7b61ff'};">${PLATFORM_LABELS[task.platform]||'Task'}</span>`
-      : '';
-    const taskImages = task.images && task.images.length ? task.images : (task.image ? [task.image] : []);
-    const galleryHtml = taskImages.length
-      ? `<div style="display:flex; gap:8px; overflow-x:auto; margin-bottom:12px;">${taskImages.map(src => `<img src="${src}" style="width:110px; height:90px; object-fit:cover; border-radius:12px; flex:none;" onerror="this.style.display='none'">`).join('')}</div>`
-      : '';
-
-    div.innerHTML = `
-      ${statusHtml}
-      ${reasonHtml}
-      ${galleryHtml}
-      ${platformBadge}
-      <div class="task-top">
-        <div class="task-title">${task.title||''}</div>
-        <div class="task-reward">${moneyUSD(task.reward)}</div>
+  list.innerHTML = entries.map(([code, c]) => `
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid var(--card-border); font-size:13px; gap:10px;">
+      <div><b>${code}</b> ${c.symbol||''} — ${c.name||''} <span style="color:var(--text-dim);">(rate ${c.rate})</span> ${!c.enabled ? '<span class="badge b-rejected" style="margin-left:6px;">Blocked</span>' : ''}</div>
+      <div class="actions">
+        <button class="btn secondary" onclick="toggleCurrency('${code}', ${!c.enabled})">${c.enabled ? 'Block' : 'Unblock'}</button>
+        <button class="btn danger" onclick="deleteCurrency('${code}')">Delete</button>
       </div>
-      <div class="task-desc">${task.description||''}</div>
-      ${actionHtml}
-    `;
-    list.appendChild(div);
+    </div>
+  `).join('');
+}
+
+function addCurrency(){
+  const code = document.getElementById('cur-code').value.trim().toUpperCase();
+  const symbol = document.getElementById('cur-symbol').value.trim();
+  const name = document.getElementById('cur-name').value.trim();
+  const rate = parseFloat(document.getElementById('cur-rate').value);
+  if(!code || !name || !rate){ alert('Please fill in code, name, and rate.'); return; }
+  db.ref('settings/currencies/' + code).set({ name, symbol, rate, enabled: true }).then(() => {
+    document.getElementById('cur-code').value = '';
+    document.getElementById('cur-symbol').value = '';
+    document.getElementById('cur-name').value = '';
+    document.getElementById('cur-rate').value = '';
   });
 }
 
-function submitTask(taskId){
-  const task = allTasks[taskId];
-  let proof = '';
-  const proofEl = document.getElementById('proof-' + taskId);
-  if(proofEl) proof = proofEl.value.trim();
-  if(task.proofType !== 'none' && !proof){
-    showToast('Please provide proof before submitting.');
-    return;
-  }
-  const subRef = db.ref('submissions').push();
-  subRef.set({
-    taskId, taskTitle: task.title, uid: currentUser.uid, userName: userData.name,
-    proof, reward: task.reward, status: 'pending', submittedAt: Date.now()
-  }).then(() => {
-    showToast('Submitted for review');
+function toggleCurrency(code, enabled){
+  db.ref('settings/currencies/' + code + '/enabled').set(enabled);
+}
+
+function deleteCurrency(code){
+  if(confirm('Remove ' + code + ' from the currency list?')) db.ref('settings/currencies/' + code).remove();
+}
+
+/* ===================== Support links ===================== */
+function saveSupportLinks(){
+  const whatsapp = document.getElementById('sup-whatsapp').value.trim();
+  const telegram = document.getElementById('sup-telegram').value.trim();
+  const group = document.getElementById('sup-group').value.trim();
+  db.ref('settings/support').set({ whatsapp, telegram, group }).then(() => {
+    const msg = document.getElementById('sup-msg');
+    msg.style.color = 'var(--teal)';
+    msg.textContent = 'Support links saved.';
+    msg.style.display = 'block';
+    setTimeout(() => msg.style.display='none', 2500);
   });
 }
-
-/* ===================== Withdraw ===================== */
-function loadWithdrawSettings(){
-  db.ref('settings/withdraw').on('value', snap => {
-    if(snap.exists()) withdrawSettings = snap.val();
-    document.getElementById('wd-amt-label').textContent =
-      `Amount (min ${money(withdrawSettings.min)} — max ${money(withdrawSettings.max)})`;
+/* ===================== Settings ===================== */
+function saveSettings(){
+  const min = parseFloat(document.getElementById('set-min').value);
+  const max = parseFloat(document.getElementById('set-max').value);
+  if(!min || !max || min >= max){ alert('Please enter a valid min and max (min must be less than max).'); return; }
+  db.ref('settings/withdraw').set({ min, max }).then(() => {
+    const msg = document.getElementById('settings-msg');
+    msg.style.color = 'var(--teal)';
+    msg.textContent = 'Settings saved.';
+    msg.style.display = 'block';
+    setTimeout(() => msg.style.display='none', 2500);
   });
-}
-
-let selectedMethod = 'usdt';
-function selectMethod(method){
-  selectedMethod = method;
-  document.querySelectorAll('.method-card').forEach(c => c.classList.toggle('selected', c.dataset.method === method));
-  const label = document.getElementById('wd-acc-label');
-  label.textContent = method === 'usdt' ? 'USDT wallet address (TRC20)' : 'Mobile number';
-  document.getElementById('wd-account').placeholder = method === 'usdt' ? 'T...' : 'e.g. 01XXXXXXXXX';
-}
-
-function requestWithdraw(){
-  const method = selectedMethod;
-  const account = document.getElementById('wd-account').value.trim();
-  const amount = parseFloat(document.getElementById('wd-amount').value);
-  const errEl = document.getElementById('wd-err');
-  errEl.style.display='none';
-
-  if(!account){ errEl.textContent='Please enter your account/wallet details.'; errEl.style.display='block'; return; }
-  if(!amount || amount < withdrawSettings.min || amount > withdrawSettings.max){
-    errEl.textContent = `Amount must be between ${money(withdrawSettings.min)} and ${money(withdrawSettings.max)}.`;
-    errEl.style.display='block'; return;
-  }
-  if(amount > (userData.balance||0)){
-    errEl.textContent = 'Insufficient balance.'; errEl.style.display='block'; return;
-  }
-
-  const wRef = db.ref('withdrawals').push();
-  wRef.set({
-    uid: currentUser.uid, userName: userData.name, method, account, amount,
-    status: 'pending', requestedAt: Date.now()
-  }).then(() => {
-    db.ref('users/' + currentUser.uid + '/balance').transaction(v => (v||0) - amount);
-    document.getElementById('wd-account').value='';
-    document.getElementById('wd-amount').value='';
-    showToast('Withdrawal request submitted');
-  });
-}
-
-function loadWithdrawHistory(){
-  db.ref('withdrawals').orderByChild('uid').equalTo(currentUser.uid).on('value', snap => {
-    const data = snap.val() || {};
-    const list = document.getElementById('withdraw-history');
-    const entries = Object.values(data).sort((a,b) => b.requestedAt - a.requestedAt);
-    if(entries.length === 0){
-      list.innerHTML = `<div class="empty-state"><div class="icon">${ICONS.wallet}</div>No withdrawals yet.</div>`;
-      return;
-    }
-    list.innerHTML = entries.map(w => `
-      <div class="history-item">
-        <div class="h-left">
-          <span class="h-icon hi-${w.method}">${ICONS.methodIcon(w.method)}</span>
-          <div><div class="m">${w.method.toUpperCase()} · ${money(w.amount)}</div><div class="d">${new Date(w.requestedAt).toLocaleDateString()}</div></div>
-        </div>
-        <span class="task-status ${w.status==='pending'?'status-pending':w.status==='rejected'?'status-rejected':'status-approved'}">${w.status==='pending'?ICONS.clock:w.status==='rejected'?ICONS.xCircle:ICONS.checkCircle}${w.status}</span>
-      </div>
-    `).join('');
-  });
-}
-
-/* ===================== Navigation ===================== */
-function switchPage(page){
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.getElementById('page-' + page).classList.add('active');
-  document.querySelectorAll('.bottomnav button').forEach(b => b.classList.toggle('active', b.dataset.page===page));
-}
-
-/* ===================== Theme & language ===================== */
-function toggleTheme(){
-  document.body.classList.toggle('light');
-  localStorage.setItem('novatasks-theme', document.body.classList.contains('light') ? 'light' : 'dark');
-}
-(function initTheme(){
-  if(localStorage.getItem('novatasks-theme') === 'light') document.body.classList.add('light');
-})();
-
-const i18n = {
-  en: { homeTitle: 'Available tasks', homeSub: 'Pick a task, finish it, and submit your proof to earn.' },
-  bn: { homeTitle: 'উপলব্ধ টাস্ক', homeSub: 'একটি টাস্ক বেছে নিন, সম্পন্ন করুন এবং প্রমাণ জমা দিন।' }
-};
-let currentLang = 'en';
-function toggleLang(){
-  currentLang = currentLang === 'en' ? 'bn' : 'en';
-  document.querySelectorAll('[data-i18n]').forEach(el => {
-    el.textContent = i18n[currentLang][el.dataset.i18n];
-  });
-  showToast(currentLang === 'en' ? 'Language: English' : 'ভাষা: বাংলা');
 }
 </script>
 </body>
