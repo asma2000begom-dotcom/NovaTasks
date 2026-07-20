@@ -256,14 +256,6 @@ https://example.com/image2.jpg"></textarea>
     <!-- SETTINGS -->
     <div class="tabpage" id="tab-settings">
       <div class="card" style="max-width:420px;">
-        <h3 style="margin-bottom:14px;">Withdrawal limits</h3>
-        <div class="field"><label>Minimum withdrawal (৳)</label><input type="number" id="set-min" placeholder="120"></div>
-        <div class="field"><label>Maximum withdrawal (৳)</label><input type="number" id="set-max" placeholder="5000"></div>
-        <button class="btn" onclick="saveSettings()">Save settings</button>
-        <p class="err-msg" id="settings-msg" style="color:var(--teal); display:none;"></p>
-      </div>
-
-      <div class="card" style="max-width:420px;">
         <h3 style="margin-bottom:14px;">Admin account</h3>
         <div class="field"><label>Current signed-in email</label><input type="text" id="cur-admin-email" disabled></div>
         <div class="field"><label>New email (optional)</label><input type="email" id="new-admin-email" placeholder="Leave blank to keep current"></div>
@@ -284,11 +276,19 @@ https://example.com/image2.jpg"></textarea>
 
       <div class="card" style="max-width:460px;">
         <h3 style="margin-bottom:6px;">Withdrawal methods</h3>
-        <p style="color:var(--text-dim); font-size:12.5px; margin-bottom:12px;">Add a payout method per country (USDT, bKash, Nagad, or any other — e.g. Easypaisa, Paytm, PayPal). Block, delete, or set a charge/VAT for each. The charge is added on top of what the user withdraws.</p>
+        <p style="color:var(--text-dim); font-size:12.5px; margin-bottom:12px;">Add a payout method per country (USDT, bKash, Nagad, or any other). Each method has its own currency, its own min/max withdrawal amount, and an optional charge. Block, delete, or edit any of these anytime.</p>
         <div id="methods-list" style="margin-bottom:14px;"></div>
         <div class="grid2">
           <div class="field"><label>Method key</label><input type="text" id="mth-key" placeholder="e.g. easypaisa" style="text-transform:lowercase;"></div>
           <div class="field"><label>Display name</label><input type="text" id="mth-name" placeholder="e.g. Easypaisa"></div>
+        </div>
+        <div class="grid2">
+          <div class="field"><label>Currency symbol</label><input type="text" id="mth-symbol" placeholder="e.g. ₨"></div>
+          <div class="field"><label>Rate (BDT value of 1 unit)</label><input type="number" id="mth-rate" placeholder="e.g. 0.43"></div>
+        </div>
+        <div class="grid2">
+          <div class="field"><label>Min withdrawal (in this currency)</label><input type="number" id="mth-min" placeholder="e.g. 500"></div>
+          <div class="field"><label>Max withdrawal (in this currency)</label><input type="number" id="mth-max" placeholder="e.g. 20000"></div>
         </div>
         <div class="grid2">
           <div class="field"><label>Charge % (optional)</label><input type="number" id="mth-fee-percent" placeholder="0"></div>
@@ -453,12 +453,6 @@ function initAdminData(){
     renderWithdrawals(snap.val() || {});
   });
 
-  db.ref('settings/withdraw').on('value', snap => {
-    const s = snap.val() || { min: 120, max: 5000 };
-    document.getElementById('set-min').value = s.min;
-    document.getElementById('set-max').value = s.max;
-  });
-
   db.ref('settings/support').on('value', snap => {
     const s = snap.val() || {};
     document.getElementById('sup-whatsapp').value = s.whatsapp || '';
@@ -469,9 +463,31 @@ function initAdminData(){
   db.ref('settings/withdrawMethods').get().then(snap => {
     if(!snap.exists()){
       db.ref('settings/withdrawMethods').set({
-        usdt: { name: 'USDT', feePercent: 0, feeFixed: 0, enabled: true },
-        bkash: { name: 'bKash', feePercent: 0, feeFixed: 0, enabled: true },
-        nagad: { name: 'Nagad', feePercent: 0, feeFixed: 0, enabled: true }
+        usdt: { name: 'USDT', symbol: '$', rate: USD_RATE, min: 5, max: 500, feePercent: 0, feeFixed: 0, enabled: true },
+        bkash: { name: 'bKash', symbol: '৳', rate: 1, min: 120, max: 5000, feePercent: 0, feeFixed: 0, enabled: true },
+        nagad: { name: 'Nagad', symbol: '৳', rate: 1, min: 120, max: 5000, feePercent: 0, feeFixed: 0, enabled: true }
+      });
+    } else {
+      // Migration: older method entries created before rate/min/max/symbol
+      // existed are missing those fields. Patch them in automatically so
+      // amount limits and currency display actually work.
+      const defaults = {
+        usdt:  { symbol: '$', rate: USD_RATE, min: 5,   max: 500 },
+        bkash: { symbol: '৳', rate: 1,        min: 120, max: 5000 },
+        nagad: { symbol: '৳', rate: 1,        min: 120, max: 5000 }
+      };
+      const methods = snap.val();
+      Object.entries(methods).forEach(([key, m]) => {
+        const needsFix = m.min == null || m.max == null || !m.rate;
+        if(needsFix){
+          const fallback = defaults[key] || { symbol: m.symbol || '', rate: m.rate || 1, min: m.min != null ? m.min : 1, max: m.max != null ? m.max : 100000 };
+          db.ref('settings/withdrawMethods/' + key).update({
+            symbol: m.symbol != null ? m.symbol : fallback.symbol,
+            rate: m.rate || fallback.rate,
+            min: m.min != null ? m.min : fallback.min,
+            max: m.max != null ? m.max : fallback.max
+          });
+        }
       });
     }
   });
@@ -703,8 +719,8 @@ function renderWithdrawals(wds){
       ? `<div class="actions"><button class="btn ok" onclick="approveWithdraw('${id}')">Mark paid</button><button class="btn danger" onclick="rejectWithdraw('${id}')">Reject</button></div>`
       : (w.status === 'rejected' && w.rejectReason ? `<span style="color:var(--text-dim); font-size:12px;">Reason: ${w.rejectReason}</span>` : '—');
     const feeNote = w.fee ? `<div style="font-size:11px; color:var(--text-dim);">+ ${money(w.fee)} charge</div>` : '';
-    const amountText = w.displayCurrency === 'USD'
-      ? `$${(w.displayAmount||0).toFixed(2)} <span style="color:var(--text-dim); font-size:11px;">(${money(w.amount)})</span>`
+    const amountText = (w.displayAmount != null)
+      ? `${w.displaySymbol || ''}${w.displayAmount.toFixed(2)} <span style="color:var(--text-dim); font-size:11px;">(${money(w.amount)})</span>`
       : money(w.amount);
     return `<tr>
       <td>${w.userName||''}</td>
@@ -886,9 +902,11 @@ function renderMethodsList(methods){
     if(m.feePercent) feeParts.push(m.feePercent + '%');
     if(m.feeFixed) feeParts.push('৳' + m.feeFixed);
     const feeText = feeParts.length ? feeParts.join(' + ') : 'No charge';
+    const symbol = m.symbol || '';
+    const rangeText = (m.min != null && m.max != null) ? `${symbol}${m.min} – ${symbol}${m.max}` : 'No limit set';
     return `
     <div style="display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid var(--card-border); font-size:13px; gap:10px;">
-      <div><b>${m.name || key}</b> <span style="color:var(--text-dim);">(${feeText})</span> ${!m.enabled ? '<span class="badge b-rejected" style="margin-left:6px;">Blocked</span>' : ''}</div>
+      <div><b>${m.name || key}</b> <span style="color:var(--text-dim);">— range ${rangeText} · charge: ${feeText}</span> ${!m.enabled ? '<span class="badge b-rejected" style="margin-left:6px;">Blocked</span>' : ''}</div>
       <div class="actions">
         <button class="btn secondary" onclick="toggleMethod('${key}', ${!m.enabled})">${m.enabled ? 'Block' : 'Unblock'}</button>
         <button class="btn danger" onclick="deleteMethod('${key}')">Delete</button>
@@ -900,12 +918,26 @@ function renderMethodsList(methods){
 function addMethod(){
   const key = document.getElementById('mth-key').value.trim().toLowerCase();
   const name = document.getElementById('mth-name').value.trim();
+  const symbol = document.getElementById('mth-symbol').value.trim();
+  const rate = parseFloat(document.getElementById('mth-rate').value);
+  const min = parseFloat(document.getElementById('mth-min').value);
+  const max = parseFloat(document.getElementById('mth-max').value);
   const feePercent = parseFloat(document.getElementById('mth-fee-percent').value) || 0;
   const feeFixed = parseFloat(document.getElementById('mth-fee-fixed').value) || 0;
-  if(!key || !name){ alert('Please enter a method key and display name.'); return; }
-  db.ref('settings/withdrawMethods/' + key).set({ name, feePercent, feeFixed, enabled: true }).then(() => {
+  if(!key || !name || !rate || !min || !max){
+    alert('Please fill in key, name, rate, min, and max.');
+    return;
+  }
+  if(min >= max){ alert('Min must be less than max.'); return; }
+  db.ref('settings/withdrawMethods/' + key).set({
+    name, symbol, rate, min, max, feePercent, feeFixed, enabled: true
+  }).then(() => {
     document.getElementById('mth-key').value = '';
     document.getElementById('mth-name').value = '';
+    document.getElementById('mth-symbol').value = '';
+    document.getElementById('mth-rate').value = '';
+    document.getElementById('mth-min').value = '';
+    document.getElementById('mth-max').value = '';
     document.getElementById('mth-fee-percent').value = '';
     document.getElementById('mth-fee-fixed').value = '';
   });
@@ -969,19 +1001,6 @@ function saveSupportLinks(){
     const msg = document.getElementById('sup-msg');
     msg.style.color = 'var(--teal)';
     msg.textContent = 'Support links saved.';
-    msg.style.display = 'block';
-    setTimeout(() => msg.style.display='none', 2500);
-  });
-}
-/* ===================== Settings ===================== */
-function saveSettings(){
-  const min = parseFloat(document.getElementById('set-min').value);
-  const max = parseFloat(document.getElementById('set-max').value);
-  if(!min || !max || min >= max){ alert('Please enter a valid min and max (min must be less than max).'); return; }
-  db.ref('settings/withdraw').set({ min, max }).then(() => {
-    const msg = document.getElementById('settings-msg');
-    msg.style.color = 'var(--teal)';
-    msg.textContent = 'Settings saved.';
     msg.style.display = 'block';
     setTimeout(() => msg.style.display='none', 2500);
   });
